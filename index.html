@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OH! — Optics Hub</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+
+body {
+  margin: 0;
+
+  background:
+    linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)),
+    url("image/background.jpg") center center / cover no-repeat;
+
+  color: white;
+  overflow: hidden;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.hero {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* =========================
+   LOGO
+========================= */
+
+.center-title {
+  position: absolute;
+
+  left: 55%;
+  top: 60%;
+
+  transform: translate(-50%, -50%);
+
+  z-index: 1;
+
+  pointer-events: none;
+}
+
+.oh-logo {
+  width: 520px;
+  height: auto;
+
+  display: block;
+
+  filter:
+    drop-shadow(0 0 18px rgba(255,180,0,0.15));
+}
+
+/* =========================
+   SPECTRUM
+========================= */
+
+.spectrum {
+  position: absolute;
+
+  left: 8%;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  width: 84vw;
+  max-width: 1400px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+
+  z-index: 2;
+}
+
+.line-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.line-label {
+  min-width: 240px;
+
+  color: white;
+  text-decoration: none;
+
+  font-size: 14px;
+  letter-spacing: 0.3px;
+
+  opacity: 0.38;
+
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+
+  white-space: nowrap;
+}
+
+.line-wrapper:hover .line-label {
+  opacity: 1;
+  transform: translateX(5px);
+}
+
+/* intro / outro */
+
+.line-wrapper.special .line-label {
+  opacity: 0;
+}
+
+.line-wrapper.special:hover .line-label {
+  opacity: 1;
+  transform: translateX(5px);
+}
+
+/* =========================
+   LINES
+========================= */
+
+.wave-line {
+  width: 100%;
+  height: 60px;
+
+  overflow: visible;
+  cursor: pointer;
+}
+
+path {
+  fill: none;
+
+  stroke: rgba(255,255,255,1);
+  stroke-width: 4;
+  stroke-linecap: round;
+
+  opacity: 0;
+
+  transition: opacity 0.15s ease;
+}
+
+/* =========================
+   GLOW
+========================= */
+
+.white path {
+  filter:
+    drop-shadow(0 0 6px rgba(255,255,255,0.72))
+    drop-shadow(0 0 16px rgba(255,255,255,0.48));
+}
+
+.red path {
+  filter:
+    drop-shadow(0 0 6px rgba(255,40,40,0.82))
+    drop-shadow(0 0 16px rgba(255,40,40,0.68));
+}
+
+.orange path {
+  filter:
+    drop-shadow(0 0 6px rgba(255,140,0,0.82))
+    drop-shadow(0 0 16px rgba(255,140,0,0.68));
+}
+
+.yellow path {
+  filter:
+    drop-shadow(0 0 6px rgba(255,220,40,0.82))
+    drop-shadow(0 0 16px rgba(255,220,40,0.68));
+}
+
+.green path {
+  filter:
+    drop-shadow(0 0 6px rgba(57,255,20,0.82))
+    drop-shadow(0 0 16px rgba(57,255,20,0.68));
+}
+
+.cyan path {
+  filter:
+    drop-shadow(0 0 6px rgba(0,229,255,0.82))
+    drop-shadow(0 0 16px rgba(0,229,255,0.68));
+}
+
+.blue path {
+  filter:
+    drop-shadow(0 0 6px rgba(61,127,255,0.82))
+    drop-shadow(0 0 16px rgba(61,127,255,0.68));
+}
+
+.violet path {
+  filter:
+    drop-shadow(0 0 6px rgba(184,79,255,0.82))
+    drop-shadow(0 0 16px rgba(184,79,255,0.68));
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1100px){
+
+  .oh-logo{
+    width: 380px;
+  }
+
+  .line-label{
+    min-width: 180px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px){
+
+  .oh-logo{
+    width: 260px;
+  }
+
+  .spectrum{
+    width: 88vw;
+    left: 6%;
+  }
+
+  .line-label{
+    min-width: 120px;
+    font-size: 11px;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<main class="hero">
+
+  <!-- =========================
+       LOGO
+  ========================== -->
+
+  <div class="center-title">
+    <img src="image/optics house.png"
+         alt="OH"
+         class="oh-logo">
+  </div>
+
+  <!-- =========================
+       SPECTRUM
+  ========================== -->
+
+  <div class="spectrum">
+
+    <!-- INTRO -->
+
+    <div class="line-wrapper special">
+      <a href="c0.html"
+         target="_blank"
+         class="line-label">
+         0. Intro
+      </a>
+
+      <svg class="wave-line white" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <!-- MAIN -->
+
+    <div class="line-wrapper">
+      <a href="c1.html"
+         target="_blank"
+         class="line-label">
+         1. Maxwell & EM wave
+      </a>
+
+      <svg class="wave-line red" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper">
+      <a href="c2.html"
+         target="_blank"
+         class="line-label">
+         2. Dipole radiation
+      </a>
+
+      <svg class="wave-line orange" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper">
+      <a href="c3.html"
+         target="_blank"
+         class="line-label">
+         3. Propagation
+      </a>
+
+      <svg class="wave-line yellow" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper">
+      <a href="c4.html"
+         target="_blank"
+         class="line-label">
+         4. Reflection and Refraction
+      </a>
+
+      <svg class="wave-line green" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper">
+      <a href="c5.html"
+         target="_blank"
+         class="line-label">
+         5. Diffraction
+      </a>
+
+      <svg class="wave-line cyan" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper">
+      <a href="c6.html"
+         target="_blank"
+         class="line-label">
+         6. Polarization
+      </a>
+
+      <svg class="wave-line blue" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper">
+      <a href="c7.html"
+         target="_blank"
+         class="line-label">
+         7. Interference
+      </a>
+
+      <svg class="wave-line violet" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+    <div class="line-wrapper special">
+      <a href="c8.html"
+         target="_blank"
+         class="line-label">
+         8. Outro
+      </a>
+
+      <svg class="wave-line white" viewBox="0 0 900 60">
+        <path d=""/>
+      </svg>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+
+const CENTER_Y = 30;
+const AMPLITUDE = 5;
+const WIDTH = 900;
+
+const wavelengths = [
+  200,
+  180,
+  155,
+  130,
+  110,
+  90,
+  75,
+  60,
+  45
+];
+
+function createCombinedWave(waves, now){
+
+  let d = "";
+
+  waves.forEach(wave => {
+
+    const elapsed = now - wave.start;
+
+    const progress = Math.min(
+      elapsed / wave.duration,
+      1
+    );
+
+    const wavelength = wave.wavelength;
+    const waveLength = wavelength * 4;
+
+    const waveFront =
+      progress * (WIDTH + waveLength);
+
+    let started = false;
+
+    for(let x = 0; x <= WIDTH; x += 6){
+
+      const dist = waveFront - x;
+
+      if(dist > 0 && dist < waveLength){
+
+        const phase =
+          (dist / wavelength) * Math.PI * 2;
+
+        const y =
+          CENTER_Y +
+          Math.sin(phase) * AMPLITUDE;
+
+        if(!started){
+
+          d += `M${x} ${y}`;
+          started = true;
+
+        } else {
+
+          d += ` L${x} ${y}`;
+        }
+      }
+    }
+  });
+
+  return d;
+}
+
+document
+.querySelectorAll('.line-wrapper')
+.forEach((wrapper, i) => {
+
+  const svg =
+    wrapper.querySelector('.wave-line');
+
+  const path =
+    svg.querySelector('path');
+
+  const waves = [];
+
+  let animationId = null;
+
+  function animate(now){
+
+    for(let j = waves.length - 1; j >= 0; j--){
+
+      if(now - waves[j].start >
+         waves[j].duration){
+
+        waves.splice(j, 1);
+      }
+    }
+
+    path.setAttribute(
+      'd',
+      createCombinedWave(waves, now)
+    );
+
+    if(waves.length > 0){
+
+      animationId =
+        requestAnimationFrame(animate);
+
+    } else {
+
+      path.setAttribute('d', '');
+
+      path.style.opacity = 0;
+
+      animationId = null;
+    }
+  }
+
+  wrapper.addEventListener('mouseenter', () => {
+
+  if (waves.length > 0) {
+    return;
+  }
+
+  path.style.opacity =
+  wrapper.classList.contains('special')
+    ? 0.5
+    : 1;
+
+  waves.push({
+    start: performance.now(),
+    duration: 1800,
+    wavelength: wavelengths[i]
+  });
+
+  if(!animationId){
+
+    animationId =
+      requestAnimationFrame(animate);
+  }
+});
+
+});
+
+</script>
+
+</body>
+</html>
