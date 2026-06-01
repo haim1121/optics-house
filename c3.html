@@ -1,21 +1,734 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Background</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>3. Snell's Law</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&family=Noto+Sans+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.js"></script>
 
 <style>
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  background: black;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #000;
+  color: rgba(255,255,255,0.82);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 300;
+  font-size: 13px;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20px 28px 18px;
+  border-bottom: 1px solid #151515;
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: 6px;
+  color: #fff;
+}
+.header-hint {
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: 0.3;
+  font-weight: 300;
+}
+
+/* ── LAYOUT ── */
+.layout {
+  display: flex;
+  height: calc(100vh - 61px);
+}
+
+/* ── CANVAS AREA ── */
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  background: #000;
   overflow: hidden;
 }
+#vizCanvas {
+  display: block;
+  width: 80%;
+  height: 80%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* PIP */
+#pip-wrap {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+.pip-label {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  opacity: 0.3;
+}
+#pipCanvas {
+  width: 160px;
+  height: auto;
+  border: 1px solid #1a1a1a;
+  display: block;
+  background: #050505;
+}
+
+/* HUD */
+#hud {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  opacity: 0.38;
+  pointer-events: none;
+  line-height: 1.9;
+}
+#hud span { color: #fff; opacity: 1; }
+
+/* ── RIGHT PANEL ── */
+.panel {
+  width: 240px;
+  background: #000;
+  border-left: 1px solid #151515;
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding-bottom: 32px;
+  scrollbar-width: thin;
+  scrollbar-color: #1a1a1a transparent;
+}
+.panel::-webkit-scrollbar { width: 2px; }
+.panel::-webkit-scrollbar-thumb { background: #1a1a1a; }
+
+.sec-head {
+  padding: 14px 18px 10px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  border-top: 1px solid #111;
+  margin-top: 4px;
+}
+.sec-head:first-child { border-top: none; margin-top: 0; }
+.sec-body { padding: 4px 18px 12px; }
+
+#startBtn {
+  display: block;
+  width: calc(100% - 36px);
+  margin: 0 18px;
+  padding: 11px 0;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.22);
+  color: rgba(255,255,255,0.8);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#startBtn:hover { border-color: rgba(255,80,80,0.6); color: #fff; }
+#startBtn:disabled { opacity: 0.3; cursor: default; }
+
+.desc {
+  font-size: 11px;
+  line-height: 1.85;
+  color: rgba(255,255,255,0.42);
+  letter-spacing: 0.3px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.stat-key {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.38);
+}
+.stat-val {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.75);
+}
+
+/* 슬라이더 */
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ctrl-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.ctrl-val {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  min-width: 32px;
+  text-align: right;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 1px;
+  background: #222;
+  outline: none;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px; height: 10px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  transition: background 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { background: #fff; }
+
+/* 색상 범례 */
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  line-height: 2.2;
+  opacity: 0.65;
+}
+.leg-line {
+  width: 20px;
+  height: 2px;
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+/* TIR 경고 */
+#tir-badge {
+  display: none;
+  margin: 0 18px 10px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,180,0,0.35);
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: rgba(255,200,80,0.8);
+  line-height: 1.6;
+}
+
+video { display: none; }
 </style>
 </head>
-
 <body>
+
+<header>
+  <div class="logo">SNELL'S LAW</div>
+  <div class="header-hint">스넬의 법칙 — 손 추적 인터랙티브</div>
+</header>
+
+<div class="layout">
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap">
+    <canvas id="vizCanvas" width="1280" height="960"></canvas>
+
+    <div id="pip-wrap">
+      <div class="pip-label">CAMERA</div>
+      <canvas id="pipCanvas" width="320" height="240"></canvas>
+    </div>
+
+    <div id="hud">
+      STATUS &nbsp;<span id="st">STANDBY</span><br>
+      FPS &nbsp;&nbsp;&nbsp;<span id="fps">—</span><br>
+      HANDS &nbsp;<span id="hc">0</span>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+
+    <div class="sec-head">Camera</div>
+    <div class="sec-body">
+      <button id="startBtn" onclick="init()">카메라 시작</button>
+    </div>
+
+    <div class="sec-head">Snell's Law</div>
+    <div class="sec-body">
+      <div class="ctrl-row">
+        <span class="ctrl-label">n₁ (좌측 매질)</span>
+        <span class="ctrl-val" id="n1o">1.00</span>
+      </div>
+      <input type="range" id="n1" min="100" max="250" value="100"
+             oninput="document.getElementById('n1o').textContent=(this.value/100).toFixed(2)">
+
+      <div class="ctrl-row">
+        <span class="ctrl-label">n₂ (우측 매질)</span>
+        <span class="ctrl-val" id="n2o">1.50</span>
+      </div>
+      <input type="range" id="n2" min="100" max="300" value="150"
+             oninput="document.getElementById('n2o').textContent=(this.value/100).toFixed(2)">
+    </div>
+
+    <div id="tir-badge">
+      전반사 (TIR)<br>
+      θ₁ &gt; θ_c — 투과광 없음
+    </div>
+
+    <div class="sec-head">Legend</div>
+    <div class="sec-body">
+      <div class="legend-row">
+        <div class="leg-line" style="background:#ff3333;"></div>
+        입사광 (Incident)
+      </div>
+      <div class="legend-row">
+        <div class="leg-line" style="background:#ff3333; opacity:0.5;"></div>
+        반사광 (Reflected)
+      </div>
+      <div class="legend-row">
+        <div class="leg-line" style="background:#44aaff;"></div>
+        투과광 (Refracted)
+      </div>
+      <div class="legend-row">
+        <div class="leg-line" style="background:#333; border: 1px dashed #444;"></div>
+        법선 (Normal)
+      </div>
+    </div>
+
+    <div class="sec-head">Angles</div>
+    <div class="sec-body">
+      <div class="stat-row">
+        <span class="stat-key">θ₁ (입사각)</span>
+        <span class="stat-val" id="ang1">—°</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">θ₂ (굴절각)</span>
+        <span class="stat-val" id="ang2">—°</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">θ_c (임계각)</span>
+        <span class="stat-val" id="angc">—°</span>
+      </div>
+    </div>
+
+    <div class="sec-head">Status</div>
+    <div class="sec-body">
+      <div class="stat-row">
+        <span class="stat-key">STATUS</span>
+        <span class="stat-val" id="st2">STANDBY</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">FPS</span>
+        <span class="stat-val" id="fps2">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">HANDS</span>
+        <span class="stat-val" id="hc2">0</span>
+      </div>
+    </div>
+
+    <div class="sec-head">Info</div>
+    <div class="sec-body">
+      <p class="desc">
+        n₁ sin θ₁ = n₂ sin θ₂<br><br>
+        경계면은 화면 중심의<br>
+        수직선(y축)입니다.<br>
+        법선은 수평선(x축).<br><br>
+        검지로 입사각을 조절하고<br>
+        슬라이더로 굴절률을 바꿔<br>
+        굴절·반사를 관찰하세요.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<video id="video" playsinline autoplay muted width="640" height="480"></video>
+
+<script>
+const video     = document.getElementById('video');
+const vizCanvas = document.getElementById('vizCanvas');
+const pipCanvas = document.getElementById('pipCanvas');
+const vizCtx    = vizCanvas.getContext('2d');
+const pipCtx    = pipCanvas.getContext('2d');
+
+const VW = 1280, VH = 960;
+const CW = 640,  CH = 480;
+const CX = VW / 2;          // 경계면 x (화면 중심)
+const CY = VH * 0.38;       // 빨간점 y — 중심보다 약간 위
+
+const CONN = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
+const COLORS = Array(21).fill('#bfbfbf');
+COLORS[8] = '#ff3333';
+
+let detector = null, lastHands = [], lastTs = 0, frames = 0;
+
+function scalePt(x, y) {
+  return { x: (CW - x) * (VW / CW), y: y * (VH / CH) };
+}
+function setStatus(s) {
+  document.getElementById('st').textContent  = s;
+  document.getElementById('st2').textContent = s;
+}
+function setFps(v) {
+  document.getElementById('fps').textContent  = v;
+  document.getElementById('fps2').textContent = v;
+}
+function setHands(v) {
+  document.getElementById('hc').textContent  = v;
+  document.getElementById('hc2').textContent = v;
+}
+
+async function init() {
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  btn.textContent = 'LOADING...';
+  setStatus('LOADING');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: CW, height: CH, facingMode: 'user' }
+    });
+    video.srcObject = stream;
+    await video.play();
+    detector = await handPoseDetection.createDetector(
+      handPoseDetection.SupportedModels.MediaPipeHands,
+      { runtime: 'tfjs', modelType: 'full', maxHands: 2 }
+    );
+    btn.textContent = '실행 중';
+    setStatus('SCANNING');
+    requestAnimationFrame(loop);
+  } catch(e) {
+    btn.textContent = 'ERROR';
+    btn.disabled = false;
+    setStatus('ERROR');
+  }
+}
+
+async function loop(ts) {
+  frames++;
+  if (ts - lastTs >= 1000) { setFps(frames); frames = 0; lastTs = ts; }
+
+  pipCtx.save();
+  pipCtx.translate(320, 0);
+  pipCtx.scale(-1, 1);
+  pipCtx.drawImage(video, 0, 0, 320, 240);
+  pipCtx.restore();
+
+  try {
+    if (video.readyState >= 2)
+      lastHands = await detector.estimateHands(video, { flipHorizontal: false });
+  } catch(e) {}
+
+  setHands(lastHands.length);
+  setStatus(lastHands.length > 0 ? `TRACKING ${lastHands.length}` : 'SCANNING');
+
+  const c = vizCtx;
+  c.fillStyle = '#0a0a0a';
+  c.fillRect(0, 0, VW, VH);
+
+  // 우측 매질 배경 (약하게)
+  c.fillStyle = 'rgba(40, 80, 140, 0.07)';
+  c.fillRect(CX, 0, VW / 2, VH);
+
+  // 경계면 (수직선)
+  c.save();
+  c.setLineDash([6, 8]);
+  c.strokeStyle = 'rgba(255,255,255,0.1)';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(CX, 0);
+  c.lineTo(CX, VH);
+  c.stroke();
+  c.setLineDash([]);
+  c.restore();
+
+  // 법선 (수평선, 중심 통과)
+  drawNormal(c, CX, CY);
+
+  // 중심점
+  drawCenter(c, CX, CY);
+
+  if (lastHands.length === 0) {
+    c.font = '20px Courier New';
+    c.fillStyle = '#1e1e1e';
+    c.textAlign = 'center';
+    c.fillText('손을 카메라에 보여주세요', CX, CY + 80);
+  } else {
+    lastHands.forEach(hand => {
+      const pts = hand.keypoints.map(p => scalePt(p.x, p.y));
+      drawHand(c, pts);
+    });
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// 법선 (수평 점선)
+function drawNormal(c, cx, cy) {
+  c.save();
+  c.setLineDash([4, 6]);
+  c.strokeStyle = 'rgba(255,255,255,0.18)';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(cx - 120, cy);
+  c.lineTo(cx + 120, cy);
+  c.stroke();
+  c.setLineDash([]);
+  c.restore();
+}
+
+// 중심점 (경계 교점)
+function drawCenter(c, cx, cy) {
+  c.save();
+  c.beginPath();
+  c.arc(cx, cy, 5, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(255,80,80,0.45)';
+  c.shadowColor = '#ff3333';
+  c.shadowBlur = 12;
+  c.fill();
+  c.restore();
+}
+
+// 글로우 선 그리기
+function glowLine(c, x1, y1, x2, y2, color, layers) {
+  c.save();
+  c.lineCap = 'round';
+  layers.forEach(({ w, a }) => {
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    const rgb = color;
+    c.strokeStyle = rgb.replace(')', `,${a})`).replace('rgb', 'rgba');
+    c.lineWidth = w;
+    c.shadowColor = color;
+    c.shadowBlur = 20;
+    c.stroke();
+  });
+  c.restore();
+}
+
+// 화살표 헤드
+function arrowHead(c, x, y, angle, size, color) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(angle);
+  c.beginPath();
+  c.moveTo(0, 0);
+  c.lineTo(-size, -size * 0.5);
+  c.lineTo(-size, size * 0.5);
+  c.closePath();
+  c.fillStyle = color;
+  c.shadowColor = color;
+  c.shadowBlur = 10;
+  c.fill();
+  c.restore();
+}
+
+function drawSnell(c, tip) {
+  if (!tip) return;
+
+  const cx = CX, cy = CY;
+
+  // 손이 왼쪽(n1 매질)인지 오른쪽(n2 매질)인지 판단
+  const fromLeft = tip.x < cx;
+
+  const nA = document.getElementById('n1').value / 100; // 좌측 매질
+  const nB = document.getElementById('n2').value / 100; // 우측 매질
+
+  // 입사 매질 / 투과 매질
+  const nInc  = fromLeft ? nA : nB;
+  const nTran = fromLeft ? nB : nA;
+
+  // 입사광 방향벡터: tip → center
+  const dx = cx - tip.x;
+  const dy = cy - tip.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1) return;
+  const ux = dx / len, uy = dy / len;
+
+  // 법선은 항상 수평(x축). 입사각 = 법선과 입사광 사이 각 = asin(|uy|)
+  const sinT1 = Math.abs(uy);
+  const theta1 = Math.asin(sinT1);
+
+  // 임계각: 입사 매질이 더 조밀할 때만 존재
+  if (nInc > nTran) {
+    const thetaC = Math.asin(nTran / nInc);
+    document.getElementById('angc').textContent = (thetaC * 180 / Math.PI).toFixed(1) + '°';
+  } else {
+    document.getElementById('angc').textContent = '—';
+  }
+  document.getElementById('ang1').textContent = (theta1 * 180 / Math.PI).toFixed(1) + '°';
+
+  // ── 스넬 법칙 ──
+  const sinT2 = (nInc / nTran) * sinT1;
+  const tir   = sinT2 > 1.0;
+
+  document.getElementById('tir-badge').style.display = tir ? 'block' : 'none';
+  document.getElementById('ang2').textContent = tir ? 'TIR' : (Math.asin(sinT2) * 180 / Math.PI).toFixed(1) + '°';
+
+  // ── 1. 입사광: tip → center ──
+  glowLine(c, tip.x, tip.y, cx, cy, 'rgb(255,50,50)', [
+    { w: 20, a: 0.03 }, { w: 10, a: 0.09 }, { w: 4, a: 0.28 }, { w: 2, a: 0.92 }
+  ]);
+  arrowHead(c, cx - ux * 12, cy - uy * 12, Math.atan2(uy, ux), 14, 'rgb(255,50,50)');
+
+  // ── 2. 반사광: x성분 반전, y성분 유지 (항상 입사 쪽으로) ──
+  const refDx = -ux, refDy = uy;
+  const refLen = 480;
+
+  if (tir) {
+    // 전반사: 완전한 세기
+    glowLine(c, cx, cy,
+      cx + refDx * refLen, cy + refDy * refLen,
+      'rgb(255,50,50)', [
+        { w: 20, a: 0.03 }, { w: 10, a: 0.09 }, { w: 4, a: 0.28 }, { w: 2, a: 0.92 }
+      ]);
+    arrowHead(c, cx + refDx * 80, cy + refDy * 80,
+      Math.atan2(refDy, refDx), 14, 'rgb(255,50,50)');
+
+    // 경계면 글로우 플래시
+    c.save();
+    const grad = c.createRadialGradient(cx, cy, 0, cx, cy, 90);
+    grad.addColorStop(0,   'rgba(255,80,80,0.38)');
+    grad.addColorStop(0.5, 'rgba(255,40,40,0.10)');
+    grad.addColorStop(1,   'rgba(255,0,0,0)');
+    c.fillStyle = grad;
+    c.beginPath();
+    c.arc(cx, cy, 90, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+
+    // 각도 호 (입사 / 반사 동일)
+    const incAngle = Math.atan2(-uy, -ux);
+    const refAngle = Math.atan2(refDy, refDx);
+    const normalAngle = fromLeft ? Math.PI : 0; // 법선 방향 (입사 쪽)
+    drawAngleArc(c, cx, cy, normalAngle, incAngle, 55, 'rgba(255,80,80,0.45)', theta1);
+    drawAngleArc(c, cx, cy, normalAngle, refAngle, 72, 'rgba(255,80,80,0.30)', theta1);
+
+  } else {
+    // 부분 반사: 연하게
+    glowLine(c, cx, cy,
+      cx + refDx * refLen, cy + refDy * refLen,
+      'rgb(255,80,80)', [
+        { w: 14, a: 0.025 }, { w: 7, a: 0.07 }, { w: 3, a: 0.20 }, { w: 1.5, a: 0.55 }
+      ]);
+    arrowHead(c, cx + refDx * 80, cy + refDy * 80,
+      Math.atan2(refDy, refDx), 12, 'rgba(255,80,80,0.7)');
+
+    // ── 3. 굴절광: 투과 쪽으로 ──
+    const theta2 = Math.asin(sinT2);
+    const signY  = uy >= 0 ? 1 : -1;
+    // 투과 방향: x는 입사와 같은 쪽(fromLeft→+x, fromRight→-x), y는 굴절각
+    const tranDx = fromLeft ? Math.cos(theta2) : -Math.cos(theta2);
+    const tranDy = Math.sin(theta2) * signY;
+    const tLen   = 480;
+
+    glowLine(c, cx, cy,
+      cx + tranDx * tLen, cy + tranDy * tLen,
+      'rgb(60,160,255)', [
+        { w: 20, a: 0.03 }, { w: 10, a: 0.09 }, { w: 4, a: 0.28 }, { w: 2, a: 0.92 }
+      ]);
+    arrowHead(c, cx + tranDx * 80, cy + tranDy * 80,
+      Math.atan2(tranDy, tranDx), 14, 'rgb(60,160,255)');
+
+    // 각도 호
+    const incAngle  = Math.atan2(-uy, -ux);
+    const tranAngle = Math.atan2(tranDy, tranDx);
+    const normalInc  = fromLeft ? Math.PI : 0;
+    const normalTran = fromLeft ? 0 : Math.PI;
+    drawAngleArc(c, cx, cy, normalInc,  incAngle,  55, 'rgba(255,80,80,0.4)', theta1);
+    drawAngleArc(c, cx, cy, normalTran, tranAngle, 60, 'rgba(60,160,255,0.4)', theta2);
+  }
+
+  // 검지 끝 점
+  c.save();
+  c.beginPath();
+  c.arc(tip.x, tip.y, 10, 0, Math.PI * 2);
+  c.fillStyle = '#ff3333';
+  c.shadowColor = '#ff0000';
+  c.shadowBlur = 32;
+  c.fill();
+  c.restore();
+}
+
+// 각도 호 + 각도 레이블
+function drawAngleArc(c, cx, cy, startAngle, endAngle, r, color, theta) {
+  c.save();
+  c.beginPath();
+  c.arc(cx, cy, r, startAngle, endAngle, endAngle < startAngle);
+  c.strokeStyle = color;
+  c.lineWidth = 1.5;
+  c.stroke();
+
+  // 레이블
+  const midAngle = (startAngle + endAngle) / 2;
+  const lx = cx + Math.cos(midAngle) * (r + 18);
+  const ly = cy + Math.sin(midAngle) * (r + 18);
+  c.font = '11px Noto Sans Mono, monospace';
+  c.fillStyle = color.replace('0.4)', '0.85)');
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText((theta * 180 / Math.PI).toFixed(0) + '°', lx, ly);
+  c.restore();
+}
+
+function drawHand(c, pts) {
+  CONN.forEach(([a, b]) => {
+    c.beginPath();
+    c.moveTo(pts[a].x, pts[a].y);
+    c.lineTo(pts[b].x, pts[b].y);
+    c.strokeStyle = 'rgba(255,255,255,0.15)';
+    c.lineWidth = 2;
+    c.stroke();
+  });
+
+  pts.forEach((p, i) => {
+    const col = COLORS[i];
+    c.shadowColor = col;
+    c.shadowBlur = i === 8 ? 26 : 10;
+    c.beginPath();
+    c.arc(p.x, p.y, i === 8 ? 9 : 4, 0, Math.PI * 2);
+    c.fillStyle = col;
+    c.fill();
+    c.shadowBlur = 0;
+  });
+
+  // 스넬 법칙 시뮬레이션 (검지 끝 기준)
+  drawSnell(c, pts[8]);
+}
+</script>
 </body>
 </html>

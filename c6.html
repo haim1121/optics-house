@@ -1,21 +1,1093 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Background</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>6. Fourier Transform</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 html, body {
-  margin: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  color: white;
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* =========================
+   TOP BAR
+========================= */
+
+.topbar {
+  height: 48px;
   width: 100%;
-  height: 100%;
-  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid #111;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+  background: #000;
+}
+
+.topbar-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  opacity: 0.88;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.status-item {
+  font-size: 10px;
+  letter-spacing: 2px;
+  opacity: 0.35;
+  text-transform: uppercase;
+}
+
+.status-item span {
+  color: white;
+  opacity: 1;
+}
+
+/* =========================
+   SCROLL CONTAINER
+========================= */
+
+.scroll-root {
+  padding-top: 48px;
+}
+
+/* =========================
+   SECTION LABEL
+========================= */
+
+.section-label {
+  padding: 12px 24px 6px;
+  font-size: 9px;
+  letter-spacing: 4px;
+  opacity: 0.2;
+  text-transform: uppercase;
+  border-bottom: 1px solid #0d0d0d;
+}
+
+/* =========================
+   MAIN LAYOUT — 3 COLUMNS (original)
+========================= */
+
+.main {
+  height: calc(100vh - 48px);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid #111;
+}
+
+.col {
+  border-right: 1px solid #111;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.col:last-child {
+  border-right: none;
+}
+
+.col-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-bottom: 1px solid #111;
+  font-size: 10px;
+  letter-spacing: 3px;
+  opacity: 0.32;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.col-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* =========================
+   FILTER SECTION — 2 COLUMNS
+========================= */
+
+.filter-section {
+  min-height: 60vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid #111;
+}
+
+.filter-col {
+  border-right: 1px solid #111;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
+
+.filter-col:last-child { border-right: none; }
+
+.filter-col-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid #111;
+  font-size: 10px;
+  letter-spacing: 3px;
+  opacity: 0.32;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.filter-badge {
+  font-size: 8px;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  opacity: 0.5;
+}
+
+.filter-badge.lpf { color: #4af; }
+.filter-badge.hpf { color: #f84; }
+
+.filter-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  gap: 14px;
+  min-height: 360px;
+}
+
+.filter-canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+}
+
+.filter-canvas {
+  display: block;
+  image-rendering: pixelated;
+  background: #050505;
+  border: 1px solid #1a1a1a;
+}
+
+/* filter controls inline */
+.filter-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.filter-ctrl-row label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  opacity: 0.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.filter-ctrl-row input[type=range] {
+  flex: 1;
+  accent-color: rgba(255,255,255,0.5);
+  cursor: pointer;
+}
+
+.filter-ctrl-row .ctrl-val {
+  font-size: 9px;
+  opacity: 0.3;
+  letter-spacing: 1px;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* LPF accent */
+#lpfSection .filter-ctrl-row input[type=range] {
+  accent-color: rgba(68, 170, 255, 0.7);
+}
+#hpfSection .filter-ctrl-row input[type=range] {
+  accent-color: rgba(255, 136, 68, 0.7);
+}
+
+/* filter overlay indicator on canvas area */
+.filter-mask-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-canvas-wrap {
+  position: relative;
+}
+
+/* =========================
+   COLUMN 1 — CAMERA
+========================= */
+
+#vizCanvas {
+  display: block;
+  background: #050505;
+  border: 1px solid #151515;
+}
+
+video { display: none; }
+
+/* =========================
+   COLUMN 2 — FFT MAGNITUDE
+========================= */
+
+.fft-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#magCanvas {
+  width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+  background: #050505;
+  border: 1px solid #151515;
+  aspect-ratio: 1;
+}
+
+/* =========================
+   COLUMN 3 — GRAPHS
+========================= */
+
+.col-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #111;
+  overflow: hidden;
+}
+
+.graph-cell:last-child { border-bottom: none; }
+
+.graph-header {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 9px;
+  letter-spacing: 3px;
+  opacity: 0.28;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  border-bottom: 1px solid #0e0e0e;
+}
+
+.graph-body {
+  flex: 1;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+#specCanvas, #radCanvas {
+  display: block;
+  background: #050505;
+  flex: 1;
+}
+
+/* =========================
+   CONTROLS OVERLAY
+========================= */
+
+.controls {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  z-index: 200;
+  background: rgba(0,0,0,0.75);
+  padding: 10px 24px;
+  border: 1px solid #151515;
+  backdrop-filter: blur(4px);
+}
+
+.ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  opacity: 0.32;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ctrl input[type=range] {
+  width: 90px;
+  accent-color: rgba(255,255,255,0.6);
+  cursor: pointer;
+}
+
+.ctrl select {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  color: white;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.ctrl select option { background: #111; }
+
+.ctrl-val {
+  font-size: 9px;
+  opacity: 0.32;
+  letter-spacing: 1px;
+  min-width: 22px;
+}
+
+.ctrl-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255,255,255,0.1);
+}
+
+/* scroll hint */
+.scroll-hint {
+  position: fixed;
+  bottom: 74px;
+  right: 28px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  opacity: 0.2;
+  text-transform: uppercase;
+  z-index: 200;
+  animation: blink 2s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scroll-hint::after {
+  content: '↓';
+  font-size: 12px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.5; }
+}
+
+/* =========================
+   START OVERLAY
+========================= */
+
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 300;
+  backdrop-filter: blur(2px);
+}
+
+.start-overlay h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px;
+  font-weight: 400;
+  letter-spacing: 6px;
+  opacity: 0.88;
+}
+
+.start-overlay p {
+  font-size: 13px;
+  opacity: 0.38;
+  letter-spacing: 2px;
+}
+
+.start-btn {
+  margin-top: 12px;
+  padding: 12px 36px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.28);
+  color: white;
+  letter-spacing: 4px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.start-btn:hover { border-color: rgba(255,255,255,0.6); }
+
 </style>
 </head>
-
 <body>
+
+<!-- START OVERLAY -->
+<div class="start-overlay" id="startOverlay">
+  <h1>Fourier Transform</h1>
+  <p>spatial frequency — realtime camera analysis</p>
+  <button class="start-btn" onclick="init()">카메라 시작</button>
+</div>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-title">Fourier Transform</div>
+  <div class="topbar-right">
+    <div class="status-item">status <span id="st">STANDBY</span></div>
+    <div class="status-item">fps <span id="fps">—</span></div>
+    <div class="status-item">size <span id="fftDisp">128</span></div>
+  </div>
+</header>
+
+<!-- SCROLL ROOT -->
+<div class="scroll-root">
+
+  <!-- SECTION 1: LIVE ANALYSIS -->
+  <div class="section-label">01 — realtime analysis</div>
+
+  <!-- MAIN 3-COLUMN LAYOUT -->
+  <div class="main">
+
+    <!-- COL 1: CAMERA -->
+    <div class="col">
+      <div class="col-header">camera feed</div>
+      <div class="col-body" style="padding:12px;">
+        <canvas id="vizCanvas" width="640" height="480"></canvas>
+      </div>
+    </div>
+
+    <!-- COL 2: FFT MAGNITUDE -->
+    <div class="col">
+      <div class="col-header">FFT magnitude spectrum</div>
+      <div class="col-body" style="padding:8px;">
+        <div class="fft-wrap">
+          <canvas id="magCanvas" width="128" height="128"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL 3: GRAPHS -->
+    <div class="col col-right" style="border-right:none;">
+
+      <div class="graph-cell">
+        <div class="graph-header">수평 주파수 프로파일</div>
+        <div class="graph-body">
+          <canvas id="specCanvas" width="400" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="graph-cell">
+        <div class="graph-header">반경 평균 주파수 분포</div>
+        <div class="graph-body">
+          <canvas id="radCanvas" width="400" height="120"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SECTION 2: FILTERS -->
+  <div class="section-label">02 — spatial frequency filters</div>
+
+  <div class="filter-section">
+
+    <!-- HPF COLUMN -->
+    <div class="filter-col" id="lpfSection">
+      <div class="filter-col-header">
+        <span>high pass filter</span>
+        <span class="filter-badge lpf">LPF</span>
+      </div>
+      <div class="filter-body">
+        <div class="filter-canvas-wrap">
+          <canvas id="lpfCanvas" class="filter-canvas" width="256" height="192"></canvas>
+        </div>
+        <div class="filter-ctrl-row">
+          <label>통과 반경</label>
+          <input type="range" id="lpfRadius" min="2" max="80" value="20"
+            oninput="document.getElementById('lpfRadVal').textContent=this.value">
+          <span class="ctrl-val" id="lpfRadVal">20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LPF COLUMN -->
+    <div class="filter-col" id="hpfSection">
+      <div class="filter-col-header">
+        <span>Low pass filter</span>
+        <span class="filter-badge hpf">HPF</span>
+      </div>
+      <div class="filter-body">
+        <div class="filter-canvas-wrap">
+          <canvas id="hpfCanvas" class="filter-canvas" width="256" height="192"></canvas>
+        </div>
+        <div class="filter-ctrl-row">
+          <label>차단 범위</label>
+          <input type="range" id="hpfRadius" min="2" max="80" value="10"
+            oninput="document.getElementById('hpfRadVal').textContent=this.value">
+          <span class="ctrl-val" id="hpfRadVal">10</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- bottom spacer for controls -->
+  <div style="height: 80px;"></div>
+
+</div><!-- end scroll-root -->
+
+<!-- SCROLL HINT -->
+<div class="scroll-hint" id="scrollHint">scroll for filters</div>
+
+<!-- CONTROLS OVERLAY (bottom) -->
+<div class="controls">
+
+  <div class="ctrl">
+    <label>밝기</label>
+    <input type="range" id="brightSlider" min="1" max="60" value="18"
+      oninput="document.getElementById('brightVal').textContent=this.value">
+    <span class="ctrl-val" id="brightVal">18</span>
+  </div>
+
+  <div class="ctrl-divider"></div>
+
+  <div class="ctrl">
+    <label>해상도</label>
+    <select id="fftSize" onchange="onFFTSizeChange()">
+      <option value="64">64 px</option>
+      <option value="128" selected>128 px</option>
+      <option value="256">256 px</option>
+    </select>
+  </div>
+
+  <div class="ctrl-divider"></div>
+
+  <div class="ctrl">
+    <label>색상</label>
+    <select id="colormap">
+      <option value="white">WHITE</option>
+      <option value="hot">HOT</option>
+      <option value="cyan">CYAN</option>
+      <option value="plasma">PLASMA</option>
+    </select>
+  </div>
+
+  <div class="ctrl-divider"></div>
+
+  <div class="ctrl">
+    <label>채널</label>
+    <select id="grayMethod">
+      <option value="luma">루마</option>
+      <option value="avg">평균</option>
+      <option value="green">G 채널</option>
+    </select>
+  </div>
+
+</div>
+
+<!-- HIDDEN -->
+<video id="video" playsinline autoplay muted width="640" height="480"></video>
+
+<!-- =========================
+     FFT
+========================= -->
+<script>
+
+const video     = document.getElementById('video');
+const vizCanvas = document.getElementById('vizCanvas');
+const magCanvas = document.getElementById('magCanvas');
+const specCanvas = document.getElementById('specCanvas');
+const radCanvas  = document.getElementById('radCanvas');
+const lpfCanvas  = document.getElementById('lpfCanvas');
+const hpfCanvas  = document.getElementById('hpfCanvas');
+
+const vizCtx  = vizCanvas.getContext('2d');
+const magCtx  = magCanvas.getContext('2d');
+const specCtx = specCanvas.getContext('2d');
+const radCtx  = radCanvas.getContext('2d');
+const lpfCtx  = lpfCanvas.getContext('2d');
+const hpfCtx  = hpfCanvas.getContext('2d');
+
+const VW = 640, VH = 480;
+let N = 128;
+let cap, capCtx;
+let frames = 0, lastTs = 0;
+
+// hide scroll hint after first scroll
+window.addEventListener('scroll', () => {
+  const hint = document.getElementById('scrollHint');
+  if (hint) hint.style.opacity = '0';
+}, { once: true });
+
+// ── FFT ──────────────────────────────────────────────────────
+function fft1d(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len;
+    const wRe = Math.cos(ang), wIm = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cRe = 1, cIm = 0;
+      for (let j = 0; j < (len >> 1); j++) {
+        const uRe = re[i+j], uIm = im[i+j];
+        const vRe = re[i+j+(len>>1)]*cRe - im[i+j+(len>>1)]*cIm;
+        const vIm = re[i+j+(len>>1)]*cIm + im[i+j+(len>>1)]*cRe;
+        re[i+j] = uRe+vRe; im[i+j] = uIm+vIm;
+        re[i+j+(len>>1)] = uRe-vRe; im[i+j+(len>>1)] = uIm-vIm;
+        const nr = cRe*wRe - cIm*wIm;
+        cIm = cRe*wIm + cIm*wRe; cRe = nr;
+      }
+    }
+  }
+}
+
+function fft2d(re, im, n) {
+  for (let r = 0; r < n; r++) {
+    const rRe = re.slice(r*n, r*n+n), rIm = im.slice(r*n, r*n+n);
+    fft1d(rRe, rIm);
+    re.set(rRe, r*n); im.set(rIm, r*n);
+  }
+  const cRe = new Float32Array(n), cIm = new Float32Array(n);
+  for (let c = 0; c < n; c++) {
+    for (let r = 0; r < n; r++) { cRe[r] = re[r*n+c]; cIm[r] = im[r*n+c]; }
+    fft1d(cRe, cIm);
+    for (let r = 0; r < n; r++) { re[r*n+c] = cRe[r]; im[r*n+c] = cIm[r]; }
+  }
+}
+
+// IFFT: conjugate → FFT → conjugate → scale
+function ifft2d(re, im, n) {
+  // conjugate
+  for (let i = 0; i < n*n; i++) im[i] = -im[i];
+  fft2d(re, im, n);
+  for (let i = 0; i < n*n; i++) {
+    re[i] /= (n*n);
+    im[i] = -im[i] / (n*n);
+  }
+}
+
+// ── Colormap ─────────────────────────────────────────────────
+function applyColor(v, map) {
+  switch(map) {
+    case 'hot':    return [Math.min(255,v*3*255)|0, Math.min(255,Math.max(0,(v*3-1)*255))|0, Math.min(255,Math.max(0,(v*3-2)*255))|0];
+    case 'cyan':   return [0, Math.min(255,(v*255*2))|0, Math.min(255,(v*255*3))|0];
+    case 'plasma': {
+      const r=Math.min(255,Math.max(0,(0.05+v*2.5-v*v*1.5)*255))|0;
+      const g=Math.min(255,Math.max(0,v*v*1.2*255))|0;
+      const b=Math.min(255,Math.max(0,(0.5+Math.sin(v*Math.PI)*0.5)*255))|0;
+      return [r,g,b];
+    }
+    default: { const x=(v*255)|0; return [x,x,x]; }
+  }
+}
+
+// ── Graph ────────────────────────────────────────────────────
+function drawGraph(ctx, data) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.fillStyle = '#050505';
+  ctx.fillRect(0, 0, w, h);
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const y = h*i/4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+  for (let i = 1; i < 8; i++) {
+    const x = w*i/8;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+  }
+
+  // fill
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'rgba(255,255,255,0.10)');
+  grad.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let i = 0; i < data.length; i++) {
+    ctx.lineTo((i/(data.length-1))*w, h - data[i]*h*0.88);
+  }
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fill();
+
+  // line
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = (i/(data.length-1))*w;
+    const y = h - data[i]*h*0.88;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // labels
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.font = '8px Courier New';
+  ctx.textAlign = 'left';  ctx.fillText('DC', 4, h-4);
+  ctx.textAlign = 'center';ctx.fillText('Nyquist', w/2, h-4);
+  ctx.textAlign = 'right'; ctx.fillText('fₘₐₓ', w-4, h-4);
+}
+
+// ── Draw filtered image on a canvas ──────────────────────────
+function drawFilteredImage(ctx, filteredPx, n, accentColor) {
+  const cw = ctx.canvas.width, ch = ctx.canvas.height;
+  ctx.fillStyle = '#050505';
+  ctx.fillRect(0, 0, cw, ch);
+
+  // create ImageData at NxN
+  const imgd = new ImageData(n, n);
+  for (let i = 0; i < n*n; i++) {
+    const v = Math.max(0, Math.min(255, (filteredPx[i]*255)|0));
+    imgd.data[i*4]   = v;
+    imgd.data[i*4+1] = v;
+    imgd.data[i*4+2] = v;
+    imgd.data[i*4+3] = 255;
+  }
+
+  const tmp = document.createElement('canvas');
+  tmp.width = n; tmp.height = n;
+  tmp.getContext('2d').putImageData(imgd, 0, 0);
+
+  // stretch N×N source to fill the full canvas (canvas is already correct 4:3 size)
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
+  ctx.drawImage(tmp, 0, 0, cw, ch);
+
+  // border accent
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0, 0, cw, ch);
+}
+
+// ── Apply LPF in frequency domain ────────────────────────────
+function applyLPF(re, im, n, radius) {
+  const reF = re.slice(), imF = im.slice();
+  // zero out frequencies beyond radius
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const dr = r < n/2 ? r : n-r;
+      const dc = c < n/2 ? c : n-c;
+      const dist = Math.sqrt(dr*dr + dc*dc);
+      if (dist > radius) {
+        reF[r*n+c] = 0;
+        imF[r*n+c] = 0;
+      }
+    }
+  }
+  return [reF, imF];
+}
+
+// ── Apply HPF in frequency domain ────────────────────────────
+function applyHPF(re, im, n, radius) {
+  const reF = re.slice(), imF = im.slice();
+  // zero out frequencies within radius
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const dr = r < n/2 ? r : n-r;
+      const dc = c < n/2 ? c : n-c;
+      const dist = Math.sqrt(dr*dr + dc*dc);
+      if (dist <= radius) {
+        reF[r*n+c] = 0;
+        imF[r*n+c] = 0;
+      }
+    }
+  }
+  return [reF, imF];
+}
+
+// ── Reconstruct spatial image from IFFT result ───────────────
+function reconstructImage(re, im, n) {
+  // undo the checkerboard shift: multiply by (-1)^(r+c) again
+  const px = new Float32Array(n*n);
+  let minV = Infinity, maxV = -Infinity;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const v = re[r*n+c] * ((r+c)%2===0 ? 1 : -1);
+      px[r*n+c] = v;
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+  }
+  const range = (maxV - minV) || 1;
+  for (let i = 0; i < n*n; i++) px[i] = (px[i] - minV) / range;
+  return px;
+}
+
+// ── Loop ─────────────────────────────────────────────────────
+function loop(ts) {
+  frames++;
+  if (ts - lastTs >= 1000) {
+    document.getElementById('fps').textContent = frames;
+    frames = 0; lastTs = ts;
+  }
+
+  // draw mirrored camera — use actual canvas dimensions
+  const cw = vizCanvas.width, ch = vizCanvas.height;
+  vizCtx.save();
+  vizCtx.translate(cw, 0); vizCtx.scale(-1, 1);
+  vizCtx.drawImage(video, 0, 0, cw, ch);
+  vizCtx.restore();
+
+  // "LIVE" badge
+  vizCtx.fillStyle = 'rgba(255,255,255,0.1)';
+  vizCtx.font = '9px Courier New';
+  vizCtx.textAlign = 'left';
+  vizCtx.fillText('LIVE', 10, 20);
+
+  // capture
+  capCtx.drawImage(video, 0, 0, N, N);
+  const px = capCtx.getImageData(0, 0, N, N).data;
+  const method = document.getElementById('grayMethod').value;
+
+  const re = new Float32Array(N*N), im = new Float32Array(N*N);
+  for (let i = 0; i < N*N; i++) {
+    const d = i*4;
+    let g;
+    if      (method==='luma')  g = 0.299*px[d]+0.587*px[d+1]+0.114*px[d+2];
+    else if (method==='avg')   g = (px[d]+px[d+1]+px[d+2])/3;
+    else                       g = px[d+1];
+    const r=(i/N)|0, c=i%N;
+    re[i] = (g/255)*((r+c)%2===0?1:-1);
+  }
+
+  fft2d(re, im, N);
+
+  const mag = new Float32Array(N*N);
+  let maxMag = 0;
+  for (let i = 0; i < N*N; i++) {
+    mag[i] = Math.log1p(Math.sqrt(re[i]*re[i]+im[i]*im[i]));
+    if (mag[i] > maxMag) maxMag = mag[i];
+  }
+
+  const bright = parseFloat(document.getElementById('brightSlider').value);
+  const cmap   = document.getElementById('colormap').value;
+
+  // FFT magnitude image
+  const imgd = magCtx.createImageData(N, N);
+  for (let i = 0; i < N*N; i++) {
+    const v = Math.min(1, (mag[i]/maxMag) * bright/10);
+    const [r,g,b] = applyColor(v, cmap);
+    imgd.data[i*4]=r; imgd.data[i*4+1]=g; imgd.data[i*4+2]=b; imgd.data[i*4+3]=255;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width = N; tmp.height = N;
+  tmp.getContext('2d').putImageData(imgd, 0, 0);
+  magCtx.clearRect(0, 0, N, N);
+  magCtx.drawImage(tmp, 0, 0, N, N);
+
+  // crosshair
+  magCtx.strokeStyle = 'rgba(255,255,255,0.1)';
+  magCtx.lineWidth = 1; magCtx.setLineDash([2,3]);
+  magCtx.beginPath(); magCtx.moveTo(N/2,0); magCtx.lineTo(N/2,N); magCtx.stroke();
+  magCtx.beginPath(); magCtx.moveTo(0,N/2); magCtx.lineTo(N,N/2); magCtx.stroke();
+  magCtx.setLineDash([]);
+  magCtx.fillStyle = 'rgba(255,255,255,0.15)';
+  magCtx.font = '7px Courier New';
+  magCtx.textAlign = 'left';
+  magCtx.fillText('DC', N/2+4, N/2-3);
+
+  // horizontal profile
+  const mid = (N/2)|0;
+  const hProf = new Float32Array(N);
+  for (let c = 0; c < N; c++) hProf[c] = mag[mid*N+c] / maxMag;
+  drawGraph(specCtx, hProf);
+
+  // radial average
+  const bins = new Float32Array(N/2), cnt = new Float32Array(N/2);
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const d = Math.sqrt((r-N/2)**2+(c-N/2)**2)|0;
+    const bin = Math.min((N/2)-1, d);
+    bins[bin] += mag[r*N+c]; cnt[bin]++;
+  }
+  let mx = 0;
+  const radNorm = new Float32Array(N/2);
+  for (let i = 0; i < N/2; i++) { radNorm[i] = cnt[i]>0 ? bins[i]/cnt[i] : 0; if(radNorm[i]>mx) mx=radNorm[i]; }
+  for (let i = 0; i < N/2; i++) radNorm[i] /= mx||1;
+  drawGraph(radCtx, radNorm);
+
+  // ── Filter section (only compute if scrolled into view) ───
+  const lpfRadius = parseInt(document.getElementById('lpfRadius').value);
+  const hpfRadius = parseInt(document.getElementById('hpfRadius').value);
+
+  // LPF
+  const [lpfRe, lpfIm] = applyLPF(re, im, N, lpfRadius);
+  ifft2d(lpfRe, lpfIm, N);
+  const lpfPx = reconstructImage(lpfRe, lpfIm, N);
+  drawFilteredImage(lpfCtx, lpfPx, N, 'rgba(68, 170, 255, 0.4)');
+
+  // label
+  lpfCtx.fillStyle = 'rgba(68,170,255,0.35)';
+  lpfCtx.font = '8px Courier New';
+  lpfCtx.textAlign = 'left';
+  lpfCtx.fillText(`r ≤ ${lpfRadius}`, 8, 18);
+
+  // HPF
+  const [hpfRe, hpfIm] = applyHPF(re, im, N, hpfRadius);
+  ifft2d(hpfRe, hpfIm, N);
+  const hpfPx = reconstructImage(hpfRe, hpfIm, N);
+  drawFilteredImage(hpfCtx, hpfPx, N, 'rgba(255, 136, 68, 0.4)');
+
+  lpfCtx.fillStyle = 'rgba(255,136,68,0.35)';
+  hpfCtx.fillStyle = 'rgba(255,136,68,0.35)';
+  hpfCtx.font = '8px Courier New';
+  hpfCtx.textAlign = 'left';
+  hpfCtx.fillText(`r > ${hpfRadius}`, 8, 18);
+
+  requestAnimationFrame(loop);
+}
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('startOverlay').style.display = 'none';
+  document.getElementById('st').textContent = 'LOADING';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: VW, height: VH, facingMode: 'user' }
+    });
+    video.srcObject = stream;
+    await video.play();
+  } catch(e) {
+    try {
+      const s2 = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = s2;
+      await video.play();
+    } catch(e2) {
+      document.getElementById('st').textContent = 'ERROR';
+      document.getElementById('startOverlay').style.display = 'flex';
+      return;
+    }
+  }
+
+  cap = document.createElement('canvas');
+  cap.width = N; cap.height = N;
+  capCtx = cap.getContext('2d', { willReadFrequently: true });
+
+  document.getElementById('st').textContent = 'RUNNING';
+  requestAnimationFrame(loop);
+}
+
+function onFFTSizeChange() {
+  N = parseInt(document.getElementById('fftSize').value);
+  magCanvas.width = N; magCanvas.height = N;
+  document.getElementById('fftDisp').textContent = N;
+  if (cap) { cap.width = N; cap.height = N; }
+}
+
+// resize: keep all canvases properly sized with correct aspect ratios
+function resizeCanvases() {
+  // spec / rad graphs — fill container edge to edge (no padding offset)
+  const sw = specCanvas.parentElement.offsetWidth;
+  const sh = specCanvas.parentElement.offsetHeight;
+  if (sw > 0 && sh > 0) {
+    specCanvas.width  = sw; specCanvas.height = sh;
+    radCanvas.width   = sw; radCanvas.height  = sh;
+  }
+
+  // vizCanvas — maintain 4:3, letterbox inside col-body
+  {
+    const cw = vizCanvas.parentElement.clientWidth  - 24;
+    const ch = vizCanvas.parentElement.clientHeight - 24;
+    if (cw > 0 && ch > 0) {
+      let w = cw, h = Math.round(cw * 3/4);
+      if (h > ch) { h = ch; w = Math.round(ch * 4/3); }
+      vizCanvas.width  = w; vizCanvas.height = h;
+      vizCanvas.style.width  = w + 'px';
+      vizCanvas.style.height = h + 'px';
+    }
+  }
+
+  // filter canvases — same aspect ratio as vizCanvas (camera source)
+  {
+    const camW = vizCanvas.width  || 640;
+    const camH = vizCanvas.height || 480;
+    const ratio = camH / camW; // e.g. 0.75 for 4:3
+
+    const cw = lpfCanvas.parentElement.clientWidth  - 32;
+    const ch = lpfCanvas.parentElement.clientHeight - 60;
+    if (cw > 0 && ch > 0) {
+      let w = cw, h = Math.round(cw * ratio);
+      if (h > ch) { h = ch; w = Math.round(ch / ratio); }
+      lpfCanvas.width  = w; lpfCanvas.height = h;
+      hpfCanvas.width  = w; hpfCanvas.height = h;
+      lpfCanvas.style.width  = w + 'px'; lpfCanvas.style.height = h + 'px';
+      hpfCanvas.style.width  = w + 'px'; hpfCanvas.style.height = h + 'px';
+    }
+  }
+}
+
+window.addEventListener('resize', resizeCanvases);
+resizeCanvases();
+
+</script>
 </body>
 </html>

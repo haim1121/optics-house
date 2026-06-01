@@ -3,19 +3,760 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Background</title>
-
+<title>7. Polarized glasses</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&family=Noto+Sans+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  background: black;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #000;
+  color: rgba(255,255,255,0.82);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 300;
+  font-size: 13px;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20px 28px 18px;
+  border-bottom: 1px solid #151515;
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 6px;
+  color: #fff;
+}
+.header-hint {
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: 0.3;
+  font-weight: 300;
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+/* LAYOUT */
+.layout {
+  display: flex;
+  height: calc(100vh - 61px);
+}
+
+/* CAMERA AREA */
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  background: #000;
   overflow: hidden;
+}
+#video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+#overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+/* corner brackets */
+.corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  pointer-events: none;
+}
+.corner-tl { top:14px; left:14px;  border-top:1px solid rgba(255,255,255,0.25); border-left:1px solid rgba(255,255,255,0.25); }
+.corner-tr { top:14px; right:14px; border-top:1px solid rgba(255,255,255,0.25); border-right:1px solid rgba(255,255,255,0.25); }
+.corner-bl { bottom:14px; left:14px;  border-bottom:1px solid rgba(255,255,255,0.25); border-left:1px solid rgba(255,255,255,0.25); }
+.corner-br { bottom:14px; right:14px; border-bottom:1px solid rgba(255,255,255,0.25); border-right:1px solid rgba(255,255,255,0.25); }
+
+/* blink label on camera */
+#cam-blink-label {
+  position: absolute;
+  bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid #1a1a1a;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.15s, border-color 0.15s;
+  backdrop-filter: blur(4px);
+}
+#cam-blink-label.visible { opacity: 1; }
+#cam-blink-label.left   { color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.35); }
+#cam-blink-label.right  { color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.35); }
+#cam-blink-label.both   { color: #fff; border-color: rgba(255,255,255,0.6); }
+#cam-blink-label.open   { color: rgba(255,255,255,0.4); border-color: #1a1a1a; }
+
+/* face badge */
+#face-badge {
+  position: absolute;
+  top: 14px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  color: rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.6);
+  border: 1px solid #111;
+  padding: 3px 10px;
+  opacity: 0;
+  transition: opacity 0.3s, color 0.2s;
+  white-space: nowrap;
+}
+#face-badge.visible { opacity: 1; }
+#face-badge.detected { color: rgba(255,255,255,0.65); border-color: #2a2a2a; }
+
+/* cam placeholder */
+#cam-msg {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px;
+  background: #000;
+}
+#cam-msg p {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.25);
+  text-align: center;
+  line-height: 1.8;
+}
+#cam-msg.hidden { display: none; }
+
+/* PANEL */
+.panel {
+  width: 240px;
+  background: #000;
+  border-left: 1px solid #151515;
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding-bottom: 32px;
+  scrollbar-width: thin;
+  scrollbar-color: #1a1a1a transparent;
+}
+.panel::-webkit-scrollbar { width: 2px; }
+.panel::-webkit-scrollbar-thumb { background: #1a1a1a; }
+
+.sec-head {
+  padding: 14px 18px 10px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  border-top: 1px solid #111;
+  margin-top: 4px;
+  font-family: 'Noto Sans Mono', monospace;
+}
+.sec-head:first-child { border-top: none; margin-top: 0; }
+.sec-body { padding: 4px 18px 12px; }
+
+/* eye status rows */
+.eye-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px;
+  border-top: 1px solid #0f0f0f;
+}
+.eye-row:first-of-type { border-top: none; }
+.eye-row-label {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+}
+.eye-row-state {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.75);
+  transition: color 0.15s;
+}
+.eye-row-state.closed { color: rgba(255,255,255,0.25); }
+
+/* EAR bar */
+.ear-wrap { padding: 0 18px 10px; }
+.ear-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.ear-bar-label {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.25);
+  width: 14px;
+  flex-shrink: 0;
+}
+.ear-bar-bg {
+  flex: 1;
+  height: 1px;
+  background: #1a1a1a;
+  position: relative;
+}
+.ear-bar-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: rgba(255,255,255,0.5);
+  transition: width 0.08s;
+}
+.ear-val {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* stats */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #0f0f0f;
+  margin: 0 18px 12px;
+  border: 1px solid #0f0f0f;
+}
+.stat-cell {
+  background: #000;
+  padding: 10px 10px 8px;
+}
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-desc {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+}
+
+/* start button */
+#start-btn {
+  display: block;
+  width: calc(100% - 36px);
+  margin: 0 18px;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid #222;
+  color: rgba(255,255,255,0.55);
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#start-btn:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.9);
+}
+#start-btn:disabled { opacity: 0.25; cursor: default; }
+
+#status-msg {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.2);
+  text-align: center;
+  margin-top: 8px;
+  padding: 0 18px;
+  min-height: 1.2em;
+}
+
+/* timeline */
+.timeline-wrap { padding: 0 18px; }
+#timeline {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  min-height: 20px;
+}
+.blink-tick {
+  width: 5px;
+  border-radius: 1px;
+  animation: tickIn 0.2s ease;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.5);
+}
+.blink-tick.left  { height: 16px; }
+.blink-tick.right { height: 10px; }
+.blink-tick.both  { height: 16px; background: rgba(255,255,255,0.85); }
+@keyframes tickIn { from{opacity:0;transform:scaleY(0.2)} to{opacity:1;transform:scaleY(1)} }
+
+.legend-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.3);
+}
+.leg-dash { width: 14px; height: 1px; background: rgba(255,255,255,0.4); }
+.leg-dash.both { background: rgba(255,255,255,0.85); }
+
+.div-line { border: none; border-top: 1px solid #0f0f0f; margin: 8px 0; }
+
+@media (max-width: 700px) {
+  .panel { width: 100%; border-left: none; border-top: 1px solid #151515; }
+  .layout { flex-direction: column; height: auto; }
+  .canvas-wrap { height: 60vw; min-height: 240px; }
 }
 </style>
 </head>
-
 <body>
+
+<header>
+  <div class="logo">Polarized glasses</div>
+  <div class="header-hint">MEDIAPIPE · EAR ALGORITHM</div>
+</header>
+
+<div class="layout">
+
+  <!-- CAMERA -->
+  <div class="canvas-wrap" id="camera-panel">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="overlay"></canvas>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <div id="face-badge">FACE SCAN</div>
+    <div id="cam-blink-label">—</div>
+    <div id="cam-msg">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="opacity:0.15">
+        <ellipse cx="12" cy="12" rx="10" ry="6" stroke="white" stroke-width="1"/>
+        <circle cx="12" cy="12" r="3" stroke="white" stroke-width="1"/>
+      </svg>
+      <p>카메라 권한이 필요합니다<br>모든 처리는 로컬에서만 실행됩니다</p>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+
+    <!-- Eye Status -->
+    <div class="sec-head">Eye State</div>
+
+    <div class="eye-row">
+      <span class="eye-row-label">Right Eye</span>
+      <span class="eye-row-state" id="left-state-text">—</span>
+    </div>
+    <div class="eye-row">
+      <span class="eye-row-label">Left Eye</span>
+      <span class="eye-row-state" id="right-state-text">—</span>
+    </div>
+
+    <div class="div-line"></div>
+
+    <div class="ear-wrap">
+      <div class="ear-bar-row">
+        <span class="ear-bar-label">R</span>
+        <div class="ear-bar-bg"><div class="ear-bar-fill" id="left-ear-bar" style="width:0%"></div></div>
+        <span class="ear-val" id="left-ear-val">—</span>
+      </div>
+      <div class="ear-bar-row">
+        <span class="ear-bar-label">L</span>
+        <div class="ear-bar-bg"><div class="ear-bar-fill" id="right-ear-bar" style="width:0%"></div></div>
+        <span class="ear-val" id="right-ear-val">—</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="sec-head">Statistics</div>
+
+    <div class="stat-grid">
+      <div class="stat-cell">
+        <div class="stat-num" id="left-count">0</div>
+        <div class="stat-desc">Right Eye</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="right-count">0</div>
+        <div class="stat-desc">Left Eye</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="both-count">0</div>
+        <div class="stat-desc">Both</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="blink-per-min">—</div>
+        <div class="stat-desc">Per Min</div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="sec-head">Timeline</div>
+    <div class="timeline-wrap">
+      <div class="legend-row">
+        <div class="leg-item"><div class="leg-dash"></div><span>R / L</span></div>
+        <div class="leg-item"><div class="leg-dash both"></div><span>BOTH</span></div>
+      </div>
+      <div id="timeline"></div>
+    </div>
+
+    <!-- Control -->
+    <div class="sec-head">Control</div>
+    <button id="start-btn">▶ 카메라 시작</button>
+    <p id="status-msg">press to begin</p>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script>
+const video     = document.getElementById('video');
+const canvas    = document.getElementById('overlay');
+const ctx       = canvas.getContext('2d');
+const startBtn  = document.getElementById('start-btn');
+const statusMsg = document.getElementById('status-msg');
+const camMsg    = document.getElementById('cam-msg');
+const faceBadge = document.getElementById('face-badge');
+const camLabel  = document.getElementById('cam-blink-label');
+
+const leftStateText  = document.getElementById('left-state-text');
+const rightStateText = document.getElementById('right-state-text');
+const leftEarVal     = document.getElementById('left-ear-val');
+const rightEarVal    = document.getElementById('right-ear-val');
+const leftEarBar     = document.getElementById('left-ear-bar');
+const rightEarBar    = document.getElementById('right-ear-bar');
+const leftCount      = document.getElementById('left-count');
+const rightCount     = document.getElementById('right-count');
+const bothCount      = document.getElementById('both-count');
+const blinkPerMin    = document.getElementById('blink-per-min');
+const timeline       = document.getElementById('timeline');
+
+const EAR_THRESH      = 0.22;
+const MIN_CLOSED_FRAMES = 2;
+
+// MediaPipe landmark sets
+const MP_LEFT_EYE_CONTOUR  = [362,382,381,380,374,373,390,249,263,466,388,387,386,385,384,398];
+const MP_RIGHT_EYE_CONTOUR = [33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246];
+const MP_LEFT_EYE_EAR      = [362,385,387,263,373,380];
+const MP_RIGHT_EYE_EAR     = [33,160,158,133,153,144];
+
+let leftClosed  = false, rightClosed  = false;
+let leftFrames  = 0,     rightFrames  = 0;
+let leftBlinkCount = 0, rightBlinkCount = 0, bothBlinkCount = 0, totalBlinks = 0;
+let startTime = null;
+
+function dist(a,b){ return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
+function calcEAR(lm, pts){
+  const p = pts.map(i=>lm[i]);
+  const v1=dist(p[1],p[5]), v2=dist(p[2],p[4]), h=dist(p[0],p[3]);
+  return h===0 ? 0 : (v1+v2)/(2*h);
+}
+function eyeCenter(lm, pts){
+  let sx=0,sy=0;
+  pts.forEach(i=>{ sx+=lm[i].x; sy+=lm[i].y; });
+  return { x:sx/pts.length, y:sy/pts.length };
+}
+
+// Rounded rect helper (center-based)
+function roundedRect(ctx, cx, cy, w, h, r){
+  const x=cx-w/2, y=cy-h/2;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function eyeBBoxCenter(lm, pts, toScreen){
+  let minX=1,maxX=0,minY=1,maxY=0;
+  pts.forEach(i=>{
+    const p=lm[i];
+    if(p.x<minX) minX=p.x; if(p.x>maxX) maxX=p.x;
+    if(p.y<minY) minY=p.y; if(p.y>maxY) maxY=p.y;
+  });
+  const tl = toScreen(minX, minY);
+  const br = toScreen(maxX, maxY);
+  return {
+    x: (tl.x + br.x) / 2,
+    y: (tl.y + br.y) / 2,
+    w: br.x - tl.x,
+    h: br.y - tl.y
+  };
+}
+
+function drawEyeDots(lm, pts, toScreen){
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.shadowColor = 'rgba(255,255,255,0.3)';
+  ctx.shadowBlur = 4;
+  pts.forEach(i=>{
+    const p = lm[i];
+    const s = toScreen(p.x, p.y);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 2, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+}
+
+function drawGlasses(lm, lClosed, rClosed, toScreen){
+  const lBox = eyeBBoxCenter(lm, MP_LEFT_EYE_CONTOUR,  toScreen);
+  const rBox = eyeBBoxCenter(lm, MP_RIGHT_EYE_CONTOUR, toScreen);
+
+  const dx = lBox.x - rBox.x;
+  const dy = lBox.y - rBox.y;
+  const eyeDist = Math.sqrt(dx*dx + dy*dy);
+  const angle   = Math.atan2(dy, dx);
+
+  const midX = (lBox.x + rBox.x) / 2;
+  const midY = (lBox.y + rBox.y) / 2;
+
+  const eyeW  = (lBox.w + rBox.w) / 2;
+  const eyeH  = (lBox.h + rBox.h) / 2;
+  const lensW = eyeW * 1.7;
+  const lensH = eyeH * 2.2;
+  const radius = lensH * 0.28;
+  const lineW  = Math.max(canvas.width * 0.0065, 3);
+  const halfDist = eyeDist / 2;
+
+  ctx.save();
+  ctx.translate(midX, midY);
+  ctx.rotate(angle);
+
+  ctx.strokeStyle = '#111';
+  ctx.lineWidth   = lineW;
+  ctx.lineJoin    = 'round';
+  ctx.lineCap     = 'round';
+
+  roundedRect(ctx,  halfDist, 0, lensW, lensH, radius);
+  if(lClosed){ ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fill(); }
+  ctx.stroke();
+
+  roundedRect(ctx, -halfDist, 0, lensW, lensH, radius);
+  if(rClosed){ ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fill(); }
+  ctx.stroke();
+
+  const bx1 = -halfDist + lensW/2;
+  const bx2 =  halfDist - lensW/2;
+  ctx.beginPath();
+  ctx.moveTo(bx1, 0);
+  ctx.quadraticCurveTo((bx1+bx2)/2, -lensH*0.08, bx2, 0);
+  ctx.stroke();
+
+  const tLen = eyeDist * 0.42;
+  ctx.beginPath();
+  ctx.moveTo( halfDist + lensW/2, 0);
+  ctx.lineTo( halfDist + lensW/2 + tLen, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-halfDist - lensW/2, 0);
+  ctx.lineTo(-halfDist - lensW/2 - tLen, 0);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function addTick(type){
+  const tick = document.createElement('div');
+  tick.className = 'blink-tick ' + type;
+  timeline.appendChild(tick);
+  if(timeline.children.length > 50) timeline.removeChild(timeline.firstChild);
+  Array.from(timeline.children).forEach((el,i,arr)=>{
+    el.style.opacity = 0.25 + 0.75*(i/arr.length);
+  });
+}
+
+function updateCamLabel(lClosed, rClosed){
+  camLabel.classList.add('visible');
+  if(lClosed && rClosed){
+    camLabel.className = 'visible both';
+    camLabel.textContent = 'BOTH EYES CLOSED';
+  } else if(lClosed){
+    camLabel.className = 'visible left';
+    camLabel.textContent = 'RIGHT EYE CLOSED';
+  } else if(rClosed){
+    camLabel.className = 'visible right';
+    camLabel.textContent = 'LEFT EYE CLOSED';
+  } else {
+    camLabel.className = 'visible open';
+    camLabel.textContent = 'EYES OPEN';
+  }
+}
+
+function onResults(results){
+  // canvas 내부 해상도를 화면 표시 크기에 맞춤
+  const displayW = canvas.clientWidth  || canvas.offsetWidth  || 640;
+  const displayH = canvas.clientHeight || canvas.offsetHeight || 480;
+  if(canvas.width !== displayW)  canvas.width  = displayW;
+  if(canvas.height !== displayH) canvas.height = displayH;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // object-fit: cover 보정
+  // video 원본 비율 vs 표시 영역 비율을 비교해서 실제 렌더 크기와 오프셋 계산
+  const vw = video.videoWidth  || 640;
+  const vh = video.videoHeight || 480;
+  const videoRatio   = vw / vh;
+  const displayRatio = displayW / displayH;
+  let renderW, renderH, offsetX, offsetY;
+  if(videoRatio > displayRatio){
+    // 좌우가 잘림
+    renderH = displayH;
+    renderW = displayH * videoRatio;
+    offsetX = (displayW - renderW) / 2;
+    offsetY = 0;
+  } else {
+    // 위아래가 잘림
+    renderW = displayW;
+    renderH = displayW / videoRatio;
+    offsetX = 0;
+    offsetY = (displayH - renderH) / 2;
+  }
+
+  // 정규화 좌표(0~1) → 화면 픽셀 좌표 변환 함수
+  function toScreen(nx, ny){
+    return {
+      x: nx * renderW + offsetX,
+      y: ny * renderH + offsetY
+    };
+  }
+
+  if(!results.multiFaceLandmarks || results.multiFaceLandmarks.length===0){
+    faceBadge.className = 'visible';
+    faceBadge.textContent = 'NO FACE DETECTED';
+    leftStateText.textContent  = '—';
+    rightStateText.textContent = '—';
+    camLabel.className = '';
+    return;
+  }
+
+  faceBadge.className = 'visible detected';
+  faceBadge.textContent = 'FACE DETECTED';
+
+  const lm = results.multiFaceLandmarks[0];
+
+  const earUserRight = calcEAR(lm, MP_LEFT_EYE_EAR);   // 사용자 오른눈
+  const earUserLeft  = calcEAR(lm, MP_RIGHT_EYE_EAR);  // 사용자 왼눈
+
+  const nowLeftClosed  = earUserLeft  < EAR_THRESH;
+  const nowRightClosed = earUserRight < EAR_THRESH;
+
+  if(nowLeftClosed)  leftFrames++;  else leftFrames=0;
+  if(nowRightClosed) rightFrames++; else rightFrames=0;
+
+  const leftConfirmed  = leftFrames  >= MIN_CLOSED_FRAMES;
+  const rightConfirmed = rightFrames >= MIN_CLOSED_FRAMES;
+
+  // 깜빡임 이벤트
+  if(!leftConfirmed && leftClosed){
+    if(rightClosed){
+      bothBlinkCount++; bothCount.textContent = bothBlinkCount;
+      totalBlinks++; addTick('both');
+    } else {
+      leftBlinkCount++; leftCount.textContent = leftBlinkCount;
+      totalBlinks++; addTick('left');
+    }
+  }
+  if(!rightConfirmed && rightClosed && !leftClosed){
+    rightBlinkCount++; rightCount.textContent = rightBlinkCount;
+    totalBlinks++; addTick('right');
+  }
+
+  leftClosed  = leftConfirmed;
+  rightClosed = rightConfirmed;
+
+  // 패널 업데이트
+  leftStateText.textContent  = leftClosed  ? 'CLOSED' : 'OPEN';
+  rightStateText.textContent = rightClosed ? 'CLOSED' : 'OPEN';
+  leftStateText.className  = 'eye-row-state' + (leftClosed  ? ' closed' : '');
+  rightStateText.className = 'eye-row-state' + (rightClosed ? ' closed' : '');
+
+  leftEarVal.textContent  = earUserLeft.toFixed(3);
+  rightEarVal.textContent = earUserRight.toFixed(3);
+  leftEarBar.style.width  = Math.min(earUserLeft /0.4, 1)*100 + '%';
+  rightEarBar.style.width = Math.min(earUserRight/0.4, 1)*100 + '%';
+
+  updateCamLabel(leftConfirmed, rightConfirmed);
+
+  // 랜드마크 점 (흰색 반투명)
+  ctx.save();
+  drawEyeDots(lm, MP_LEFT_EYE_EAR,  toScreen);
+  drawEyeDots(lm, MP_RIGHT_EYE_EAR, toScreen);
+  ctx.restore();
+
+  drawGlasses(lm, leftConfirmed, rightConfirmed, toScreen);
+
+  if(startTime){
+    const min = (Date.now()-startTime)/60000;
+    blinkPerMin.textContent = min>0.05 ? Math.round(totalBlinks/min) : '—';
+  }
+}
+
+async function startCamera(){
+  startBtn.disabled = true;
+  statusMsg.textContent = 'loading model...';
+  try{
+    const faceMesh = new FaceMesh({
+      locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`
+    });
+    faceMesh.setOptions({ maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+    faceMesh.onResults(onResults);
+
+    statusMsg.textContent = 'requesting camera...';
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:640}, height:{ideal:480} } });
+    video.srcObject = stream;
+    await new Promise(r=>{ video.onloadedmetadata=r; });
+    await video.play();
+
+    camMsg.classList.add('hidden');
+    statusMsg.textContent = 'detecting — look at camera';
+    startBtn.textContent  = '● running';
+    startTime = Date.now();
+
+    async function loop(){
+      if(video.readyState>=2) await faceMesh.send({image:video});
+      requestAnimationFrame(loop);
+    }
+    loop();
+  } catch(e){
+    statusMsg.textContent = 'error: ' + (e.message||'camera access failed');
+    startBtn.disabled = false;
+    startBtn.textContent = '▶ retry';
+  }
+}
+
+startBtn.addEventListener('click', startCamera);
+</script>
 </body>
 </html>

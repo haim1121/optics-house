@@ -1,21 +1,541 @@
+<!--
+Reference 
+https://javalab.org/ko/phase_array/ 
+  -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Background</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>2. Interference</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.js"></script>
 
 <style>
-html, body {
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
   margin: 0;
+  background: #000;
+  color: white;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* ── HEADER ── */
+
+.header {
+  padding: 60px 24px 30px;
+  text-align: center;
+}
+
+.header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 400;
+  letter-spacing: 4px;
+  margin: 0 0 12px;
+}
+
+.header p {
+  font-size: 14px;
+  opacity: 0.5;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+/* ── MAIN CANVAS AREA ── */
+
+.stage-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 0 16px;
+}
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  max-width: 640px;
+  min-width: 0;
+}
+
+/* interference canvas — bottom layer */
+#waveCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #000;
+}
+
+/* hand overlay — sits on top */
+#vizCanvas {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
-  background: black;
-  overflow: hidden;
+  pointer-events: none;
 }
+
+/* ── SMALL CAM PREVIEW (right column) ── */
+
+.cam-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.cam-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  opacity: 0.35;
+  text-align: center;
+}
+
+#camCanvas {
+  width: 160px;
+  height: 120px;
+  background: #050505;
+  border: 1px solid #1a1a1a;
+  display: block;
+}
+
+video { display: none; }
+
+/* ── INFO BAR ── */
+
+.info-bar {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: 0.45;
+  margin-bottom: 14px;
+}
+
+.info-bar span { color: white; opacity: 1; }
+
+/* ── CONTROLS ── */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 24px 20px;
+}
+
+#btn {
+  padding: 12px 36px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  letter-spacing: 3px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, opacity 0.2s;
+}
+#btn:hover { border-color: rgba(255,255,255,0.6); }
+#btn:disabled { opacity: 0.3; cursor: default; }
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: 0.6;
+}
+
+.slider-row input[type=range] {
+  -webkit-appearance: none;
+  width: 140px;
+  height: 1px;
+  background: rgba(255,255,255,0.25);
+  outline: none;
+  cursor: pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: white;
+}
+
+/* ── DESC ── */
+
+.desc {
+  max-width: 620px;
+  margin: 40px auto 80px;
+  padding: 0 24px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.9;
+  opacity: 0.55;
+}
+
+.desc strong { opacity: 1; color: #fff; }
+
+/* ── LEGEND ── */
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  opacity: 0.55;
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 </style>
 </head>
-
 <body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>Wave Interference</h1>
+  <p>두 손의 검지 = 두 안테나 &nbsp;|&nbsp; 원형파 간섭 시뮬레이션</p>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div><span class="legend-dot" style="background:#64d2ff;"></span>보강 간섭</div>
+  <div><span class="legend-dot" style="background:#1a0a4a; border:1px solid #3a2a7a;"></span>상쇄 간섭</div>
+  <div><span class="legend-dot" style="background:#00e5ff;"></span>검지 (안테나)</div>
+</div>
+
+<!-- STAGE + CAM ROW -->
+<div class="stage-row">
+
+  <div class="stage">
+    <canvas id="waveCanvas" width="640" height="480"></canvas>
+    <canvas id="vizCanvas"  width="640" height="480"></canvas>
+  </div>
+
+  <div class="cam-col">
+    <div class="cam-label">CAM</div>
+    <canvas id="camCanvas" width="160" height="120"></canvas>
+  </div>
+
+</div>
+
+<!-- INFO -->
+<div class="info-bar">
+  STATUS: <span id="st">STANDBY</span>
+  &nbsp;|&nbsp;
+  FPS: <span id="fps">-</span>
+  &nbsp;|&nbsp;
+  HANDS: <span id="hc">0</span>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+
+  <button id="btn" onclick="init()">카메라 시작</button>
+
+  <div class="slider-row">
+    <label for="lambdaSlider">파장 λ</label>
+    <input type="range" id="lambdaSlider" min="20" max="120" value="55" step="1">
+    <span id="lambdaVal">55 px</span>
+  </div>
+
+  <div class="slider-row">
+    <label for="speedSlider">주파수 f</label>
+    <input type="range" id="speedSlider" min="1" max="8" value="3" step="0.5">
+    <span id="speedVal">3</span>
+  </div>
+
+</div>
+
+<!-- DESC -->
+<div class="desc">
+  <strong>사용 방법</strong><br>
+  카메라를 시작하고 양손의 검지를 화면 앞에 펼치세요.<br>
+  각 검지가 <strong>원형 파동</strong>을 방출하는 안테나가 됩니다.<br><br>
+  두 파동이 겹치는 곳에서 <strong>보강·상쇄 간섭</strong>이 나타납니다.<br>
+  손 위치를 움직여 간섭 패턴이 변하는 것을 관찰해보세요.
+</div>
+
+<video id="video" playsinline autoplay muted width="640" height="480"></video>
+
+<script>
+/* ───────────────────────────────────────────
+   CONFIG
+─────────────────────────────────────────── */
+
+const W = 640, H = 480;
+const SCALE = 4;          // compute grid at 1/SCALE resolution
+const GW = W / SCALE;
+const GH = H / SCALE;
+
+const CONN = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
+
+/* ───────────────────────────────────────────
+   DOM REFS
+─────────────────────────────────────────── */
+
+const video     = document.getElementById('video');
+const waveCanvas = document.getElementById('waveCanvas');
+const vizCanvas  = document.getElementById('vizCanvas');
+const camCanvas  = document.getElementById('camCanvas');
+
+const wCtx = waveCanvas.getContext('2d');
+const vCtx = vizCanvas.getContext('2d');
+const cCtx = camCanvas.getContext('2d');
+
+/* ───────────────────────────────────────────
+   SLIDER WIRING
+─────────────────────────────────────────── */
+
+let lambda = 55;
+let freq   = 3;
+
+document.getElementById('lambdaSlider').addEventListener('input', e => {
+  lambda = +e.target.value;
+  document.getElementById('lambdaVal').textContent = lambda + ' px';
+});
+
+document.getElementById('speedSlider').addEventListener('input', e => {
+  freq = +e.target.value;
+  document.getElementById('speedVal').textContent = freq;
+});
+
+/* ───────────────────────────────────────────
+   WAVE RENDERING  — pixel-grid interference
+─────────────────────────────────────────── */
+
+function drawWaves(antennas, t) {
+
+  const imgData = wCtx.createImageData(W, H);
+  const d = imgData.data;
+  const k = (2 * Math.PI) / lambda;
+  const omega = 2 * Math.PI * freq;
+
+  for (let gy = 0; gy < GH; gy++) {
+    const py = gy * SCALE;
+
+    for (let gx = 0; gx < GW; gx++) {
+      const px = gx * SCALE;
+
+      let amp = 0;
+
+      for (let ai = 0; ai < antennas.length; ai++) {
+        const ax = antennas[ai].x;
+        const ay = antennas[ai].y;
+        const dx = px - ax;
+        const dy = py - ay;
+        const r  = Math.sqrt(dx * dx + dy * dy);
+
+        // cylindrical decay: 1/sqrt(r+1)  keeps center from blowing up
+        const decay = 1 / Math.sqrt(r + 1);
+        amp += decay * Math.sin(k * r - omega * t);
+      }
+
+      /* ── map amplitude → colour
+         positive peak  → bright sky-blue / cyan
+         zero           → deep navy / black
+         negative peak  → deep indigo / violet  ── */
+
+      let r8, g8, b8;
+
+      if (antennas.length === 0) {
+        r8 = g8 = b8 = 0;
+      } else {
+        const norm = amp / Math.max(antennas.length, 1);
+        // norm ≈ [-1, 1]
+
+        if (norm >= 0) {
+          // 0 → deep navy,  1 → bright cyan-white
+          const v = Math.pow(norm, 0.65);
+          r8 = Math.round(v * 100);   // slight red for warmth at peak
+          g8 = Math.round(v * 210);
+          b8 = Math.round(40 + v * 215); // always a blue floor
+        } else {
+          // 0 → deep navy,  -1 → vivid indigo
+          const v = Math.pow(-norm, 0.65);
+          r8 = Math.round(v * 60);
+          g8 = Math.round(v * 20);
+          b8 = Math.round(30 + v * 180);
+        }
+      }
+
+      // stamp SCALE×SCALE block
+      for (let sy = 0; sy < SCALE; sy++) {
+        const row = (gy * SCALE + sy) * W;
+        for (let sx = 0; sx < SCALE; sx++) {
+          const idx = (row + gx * SCALE + sx) * 4;
+          d[idx]   = r8;
+          d[idx+1] = g8;
+          d[idx+2] = b8;
+          d[idx+3] = 255;
+        }
+      }
+    }
+  }
+
+  wCtx.putImageData(imgData, 0, 0);
+}
+
+/* ───────────────────────────────────────────
+   HAND SKELETON  (overlay)
+─────────────────────────────────────────── */
+
+function drawSkeleton(pts) {
+
+  // bones
+  CONN.forEach(([a, b]) => {
+    vCtx.beginPath();
+    vCtx.moveTo(pts[a].x, pts[a].y);
+    vCtx.lineTo(pts[b].x, pts[b].y);
+    vCtx.strokeStyle = 'rgba(255,255,255,0.18)';
+    vCtx.lineWidth = 1.5;
+    vCtx.stroke();
+  });
+
+  // joints
+  pts.forEach((p, i) => {
+    const isIndex = (i === 8);
+    const r = isIndex ? 7 : 4;
+    const col = isIndex ? '#00e5ff' : 'rgba(255,255,255,0.55)';
+
+    vCtx.beginPath();
+    vCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    vCtx.fillStyle = col;
+    vCtx.shadowColor = col;
+    vCtx.shadowBlur = isIndex ? 20 : 8;
+    vCtx.fill();
+    vCtx.shadowBlur = 0;
+  });
+
+  // antenna dot pulse ring
+  const tip = pts[8];
+  vCtx.beginPath();
+  vCtx.arc(tip.x, tip.y, 14, 0, Math.PI * 2);
+  vCtx.strokeStyle = 'rgba(0,229,255,0.35)';
+  vCtx.lineWidth = 1;
+  vCtx.stroke();
+}
+
+/* ───────────────────────────────────────────
+   HAND TRACKING
+─────────────────────────────────────────── */
+
+let detector  = null;
+let lastHands = [];
+let lastTs    = 0;
+let frames    = 0;
+let startTime = null;
+
+async function init() {
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'LOADING...';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: W, height: H, facingMode: 'user' }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    detector = await handPoseDetection.createDetector(
+      handPoseDetection.SupportedModels.MediaPipeHands,
+      { runtime: 'tfjs', modelType: 'full', maxHands: 2 }
+    );
+
+    startTime = performance.now();
+    requestAnimationFrame(loop);
+
+  } catch(e) {
+    btn.textContent = 'ERROR — 카메라 권한을 확인해주세요';
+    btn.disabled = false;
+    console.error(e);
+  }
+}
+
+async function loop(ts) {
+
+  frames++;
+  if (ts - lastTs >= 1000) {
+    document.getElementById('fps').textContent = frames;
+    frames = 0;
+    lastTs = ts;
+  }
+
+  // -- tiny cam preview (mirrored)
+  cCtx.save();
+  cCtx.translate(160, 0);
+  cCtx.scale(-1, 1);
+  cCtx.drawImage(video, 0, 0, 160, 120);
+  cCtx.restore();
+
+  // -- hand detection
+  try {
+    if (video.readyState >= 2) {
+      lastHands = await detector.estimateHands(video, { flipHorizontal: false });
+    }
+  } catch(e) {}
+
+  document.getElementById('hc').textContent = lastHands.length;
+  document.getElementById('st').textContent =
+    lastHands.length > 0 ? `TRACKING ${lastHands.length}` : 'SCANNING';
+
+  // -- collect index finger tips as antennas (mirrored x)
+  const antennas = lastHands.map(hand => {
+    const p = hand.keypoints[8];
+    return { x: W - p.x, y: p.y };
+  });
+
+  // -- animation time
+  const t = (ts - startTime) / 1000;
+
+  // -- draw interference field
+  drawWaves(antennas, t);
+
+  // -- draw skeleton overlay
+  vCtx.clearRect(0, 0, W, H);
+
+  if (lastHands.length === 0) {
+    vCtx.font = '13px Courier New';
+    vCtx.fillStyle = 'rgba(255,255,255,0.18)';
+    vCtx.textAlign = 'center';
+    vCtx.fillText('손을 카메라에 보여주세요', W / 2, H / 2);
+  } else {
+    lastHands.forEach(hand => {
+      const pts = hand.keypoints.map(p => ({ x: W - p.x, y: p.y }));
+      drawSkeleton(pts);
+    });
+  }
+
+  requestAnimationFrame(loop);
+}
+</script>
+
 </body>
 </html>

@@ -7,46 +7,681 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  },
+  svg: {
+    fontCache: 'global'
+  }
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.1/dist/hand-pose-detection.js"></script>
+
 <style>
+
 body {
   margin: 0;
   background: #000;
-  color: #fff;
+  color: white;
   font-family: 'Noto Sans KR', sans-serif;
-  overflow: hidden;
 }
 
-.page-wrap {
-  min-height: 100vh;
+/* =========================
+   HERO
+========================= */
+
+.hero {
+  height: 100vh;
   width: 100%;
-  box-sizing: border-box;
 
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.page-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 72px;
-  letter-spacing: 5px;
-  margin: 0;
-  text-shadow: 0 0 12px rgba(255,255,255,0.15);
+.intro-title {
+  width: 520px;
+  height: auto;
+  display: block;
+
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.08));
 }
 
-@media (max-width: 700px) {
-  .page-title {
-    font-size: 46px;
-  }
+/* =========================
+   CONTENT
+========================= */
+
+.content {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 120px 24px;
 }
+
+.text-box {
+  max-width: 900px;
+  margin: 0 auto;
+
+  text-align: center;
+  line-height: 1.9;
+}
+
+.text-box h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 50px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  margin-bottom: 28px;
+}
+
+.text-box p {
+  font-size: 17px;
+  /* opacity: 0.78; */
+  margin-bottom: 18px;
+}
+
+.big-line {
+  font-size: 2.2rem;
+  letter-spacing: 2px;
+}
+
+/* =========================
+   IMAGES
+========================= */
+
+.book-image {
+  width: 300px;
+  height: auto;
+  display: block;
+
+  margin: 40px auto;
+
+  transform: rotate(-20deg);
+
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.08));
+}
+
+.stick-image {
+  width: 300px;
+  height: auto;
+  display: block;
+
+  margin: 60px auto;
+
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.08));
+
+  transform: rotate(-40deg);
+  transform-origin: center center;
+
+  transition: transform 0.05s linear;
+}
+
+/* =========================
+   CAMERA SECTION
+========================= */
+
+.camera-section {
+  margin-top: 120px;
+}
+
+.camera-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.camera-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.camera-label {
+  font-size: 12px;
+  opacity: 0.6;
+  letter-spacing: 2px;
+}
+
+canvas {
+  background: #050505;
+  border: 1px solid #151515;
+
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+}
+
+#info {
+  margin-top: 18px;
+  font-size: 11px;
+  opacity: 0.55;
+  letter-spacing: 2px;
+}
+
+#info span {
+  color: white;
+}
+
+#btn {
+  margin-top: 18px;
+
+  padding: 12px 28px;
+
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+
+  color: white;
+
+  letter-spacing: 3px;
+
+  cursor: pointer;
+}
+
+video {
+  display: none;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 700px) {
+
+  .intro-title {
+    width: 320px;
+  }
+
+  .text-box h2 {
+    font-size: 32px;
+  }
+
+  .text-box p {
+    font-size: 15px;
+  }
+
+  .book-image,
+  .stick-image {
+    width: 220px;
+  }
+
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="page-wrap">
-  <h1 class="page-title">0.Intro</h1>
-</div>
+<!-- =========================
+     HERO
+========================= -->
+
+<section class="hero">
+
+  <img
+    src="image/intro.png"
+    alt="0.Intro"
+    class="intro-title"
+  >
+
+</section>
+
+<!-- =========================
+     CONTENT
+========================= -->
+
+<section class="content">
+
+  <div class="text-box">
+
+    <h2>Motivation</h2>
+
+    <p style="font-style: italic;"> 
+      왜 현대 광학을 수강했나요?
+    </p> <br>
+
+    <p>
+      저는 파동에 관심이 많고,<br>
+      특히 음악과 관련된 파동 현상을 연구하고 있습니다.<br>
+
+      빛도 파동이니,<br>
+      광학까지 공부한다면
+      ‘파동’에 대한 폭넓은 인사이트를 얻을 수 있지 않을까요?
+    </p>
+
+    <br><br>
+
+    <p>
+      .<br>.<br>.
+    </p>
+
+    <br><br><br><br>
+
+    <h2>Modern Optics</h2>
+
+    <img
+      src="image/book.png"
+      alt="Magic Book"
+      class="book-image"
+    >
+
+    <p style="font-style: italic;">
+      오늘 등교하면서 '빛'을 느끼셨나요? <br><br>
+    </p>
+
+    <p>
+      태양 빛이 우리에게 도달하기까지는<br>
+      500초가 걸린답니다. <br><br>  
+    </p>
+
+    <p style="font-style: italic;">
+        빛은 우주의 기준이 됩니다.
+      <br><br>
+      </p>
+      <p>
+
+      빛은 입자이면서 파동이며,<br>
+      우주에서 가장 빠른 속도를 가집니다
+
+      <br><br>
+
+      $c = 299,792,458\ \mathrm{m/s}$
+
+      <br><br>
+
+      물질 없이도 스스로 전파되며<br>
+      양자역학에서는 더 이상해집니다
+
+    </p>
+
+    <p>
+      마법같은 현대 광학의 세계로 떠나볼까요 ~ ☆
+    </p>
+
+    <img
+      src="image/stick.webp"
+      class="stick-image"
+      id="wand"
+    >
+
+    <!-- =========================
+         CAMERA SECTION
+    ========================== -->
+
+    <div class="camera-section">
+
+      <h2>Motion Detection</h2>
+
+      <p>
+        아래 시스템은 카메라와 AI 기반 hand landmark tracking을 통해<br>
+        손의 관절 구조를 실시간으로 시각화합니다. <br><br>
+        
+        이를 활용하여 인터랙티브 광학 시뮬레이션을 해봅시다!
+      </p>
+
+      <br><br>
+
+      <div class="camera-row">
+
+        <div class="camera-panel">
+
+          <div class="camera-label">
+            hand landmark tracking
+          </div>
+
+          <canvas
+            id="vizCanvas"
+            width="640"
+            height="480">
+          </canvas>
+
+        </div>
+
+        <div class="camera-panel">
+
+          <div class="camera-label">
+            (카메라 영상)
+          </div>
+
+          <canvas
+            id="camCanvas"
+            width="128"
+            height="96">
+          </canvas>
+
+        </div>
+
+      </div>
+
+      <video
+        id="video"
+        playsinline
+        autoplay
+        muted
+        width="640"
+        height="480">
+      </video>
+
+      <div id="info">
+        STATUS:
+        <span id="st">STANDBY</span>
+
+        &nbsp;|&nbsp;
+
+        FPS:
+        <span id="fps">-</span>
+
+        &nbsp;|&nbsp;
+
+        HANDS:
+        <span id="hc">0</span>
+      </div>
+
+      <button id="btn" onclick="init()">
+        카메라 시작
+      </button>
+
+    </div>
+
+    <p>
+      <br>
+      빛은 진동수에 따라 고유한 에너지 값을 가지고, 진동수에 따라서 굴절률이 다릅니다.<br>
+      프리즘을 사용하면 파장/진동수에 따른 빛의 굴절률 차이를 통해 빛을 파장대에 따라서 여러 광선으로 분리됩니다.<br>
+      단파장인 보라색이 제일 크게 굴절하며 장파장인 빨간색이 제일 적게 굴절합니다. <br>
+    </p>
+
+  </div>
+
+</section>
+
+<!-- =========================
+     WAND ROTATION
+========================= -->
+
+<script>
+
+const wand = document.getElementById('wand');
+
+window.addEventListener('scroll', () => {
+
+  const rotation =
+    -40 + window.scrollY * (-0.2);
+
+  wand.style.transform =
+    `rotate(${rotation}deg)`;
+
+});
+
+</script>
+
+<!-- =========================
+     HAND TRACKING
+========================= -->
+
+<script>
+
+const video     = document.getElementById('video');
+const vizCanvas = document.getElementById('vizCanvas');
+const camCanvas = document.getElementById('camCanvas');
+
+const vizCtx = vizCanvas.getContext('2d');
+const camCtx = camCanvas.getContext('2d');
+
+const W = 640;
+const H = 480;
+
+const CONN = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
+
+const COLORS = [
+  '#bfbfbf',
+  '#bfbfbf','#bfbfbf','#bfbfbf','#bfbfbf',
+  '#bfbfbf','#bfbfbf','#bfbfbf','#ffffff',
+  '#bfbfbf','#bfbfbf','#bfbfbf','#bfbfbf',
+  '#bfbfbf','#bfbfbf','#bfbfbf','#bfbfbf',
+  '#bfbfbf','#bfbfbf','#bfbfbf','#bfbfbf',
+];
+
+let detector = null;
+let lastHands = [];
+let lastTs = 0;
+let frames = 0;
+
+async function init() {
+
+  const btn = document.getElementById('btn');
+
+  btn.disabled = true;
+  btn.textContent = 'LOADING...';
+
+  try {
+
+    const stream =
+      await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: W,
+          height: H,
+          facingMode: 'user'
+        }
+      });
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    detector =
+      await handPoseDetection.createDetector(
+        handPoseDetection.SupportedModels.MediaPipeHands,
+        {
+          runtime: 'tfjs',
+          modelType: 'full',
+          maxHands: 2
+        }
+      );
+
+    requestAnimationFrame(loop);
+
+  } catch(e) {
+
+    btn.textContent = 'ERROR';
+
+  }
+
+}
+
+async function loop(ts) {
+
+  frames++;
+
+  if(ts - lastTs >= 1000){
+
+    document.getElementById('fps').textContent =
+      frames;
+
+    frames = 0;
+    lastTs = ts;
+  }
+
+  camCtx.save();
+
+  camCtx.translate(W, 0);
+  camCtx.scale(-1, 1);
+
+  camCtx.drawImage(video, 0, 0, W, H);
+
+  camCtx.restore();
+
+  try {
+
+    if(video.readyState >= 2){
+
+      lastHands =
+        await detector.estimateHands(
+          video,
+          { flipHorizontal: false }
+        );
+    }
+
+  } catch(e){}
+
+  document.getElementById('hc').textContent =
+    lastHands.length;
+
+  document.getElementById('st').textContent =
+    lastHands.length > 0
+      ? `TRACKING ${lastHands.length}`
+      : 'SCANNING';
+
+  vizCtx.fillStyle = '#0a0a0a';
+  vizCtx.fillRect(0, 0, W, H);
+
+  if(lastHands.length === 0){
+
+    vizCtx.font = '13px Courier New';
+    vizCtx.fillStyle = '#2a2a2a';
+    vizCtx.textAlign = 'center';
+
+    vizCtx.fillText(
+      '손을 카메라에 보여주세요',
+      W / 2,
+      H / 2
+    );
+
+  } else {
+
+    lastHands.forEach(hand => {
+
+      const pts =
+        hand.keypoints.map(p => ({
+          x: W - p.x,
+          y: p.y
+        }));
+
+      drawHand(vizCtx, pts);
+
+    });
+
+  }
+
+  requestAnimationFrame(loop);
+
+}
+
+function drawPrismLight(c, tip) {
+  if (!tip) return;
+
+  const y = tip.y;
+  const x = tip.x;
+
+  c.save();
+
+  c.lineCap = 'round';
+
+  c.beginPath();
+  c.moveTo(0, y);
+  c.lineTo(x, y);
+  c.strokeStyle = 'rgba(255,255,255,0.75)';
+  c.lineWidth = 3;
+  c.shadowColor = '#ffffff';
+  c.shadowBlur = 12;
+  c.stroke();
+
+  const rays = [
+    { color: '#ff2a2a', dy: -70 },
+    { color: '#ff8c00', dy: -45 },
+    { color: '#ffe600', dy: -20 },
+    { color: '#39ff14', dy: 0 },
+    { color: '#00e5ff', dy: 20 },
+    { color: '#3d7fff', dy: 45 },
+    { color: '#b84fff', dy: 70 }
+  ];
+  
+
+  rays.forEach(ray => {
+    c.beginPath();
+    c.moveTo(x, y);
+    c.lineTo(W, y + ray.dy);
+    c.strokeStyle = ray.color;
+    c.lineWidth = 3;
+    c.shadowColor = ray.color;
+    c.shadowBlur = 18;
+    c.stroke();
+  });
+
+  c.beginPath();
+  c.arc(x, y, 7, 0, Math.PI * 2);
+  c.fillStyle = '#ffffff';
+  c.shadowColor = '#ffffff';
+  c.shadowBlur = 20;
+  c.fill();
+
+  c.restore();
+}
+
+function drawHand(c, pts) {
+
+    drawPrismLight(c, pts[8]);
+
+  CONN.forEach(([a,b]) => {
+
+    const pa = pts[a];
+    const pb = pts[b];
+
+    c.beginPath();
+
+    c.moveTo(pa.x, pa.y);
+    c.lineTo(pb.x, pb.y);
+
+    c.strokeStyle =
+      'rgba(255,255,255,0.3)';
+
+    c.lineWidth = 2;
+
+    c.stroke();
+
+  });
+
+  pts.forEach((p, i) => {
+
+    const col = COLORS[i] ?? '#fff';
+
+    c.shadowColor = col;
+    c.shadowBlur = 14;
+
+    c.beginPath();
+
+    c.arc(p.x, p.y, 5, 0, Math.PI * 2);
+
+    c.fillStyle = col;
+
+    c.fill();
+
+    c.shadowBlur = 0;
+
+  });
+
+}
+
+</script>
 
 </body>
 </html>

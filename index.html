@@ -266,9 +266,10 @@ path {
 
     <div class="line-wrapper">
       <a href="c1.html"
-         target="_blank"
-         class="line-label">
-         1. Maxwell & EM wave
+        target="_blank"
+        class="line-label"
+        onclick="playSound(1)">
+        1. EM wave
       </a>
 
       <svg class="wave-line red" viewBox="0 0 900 60">
@@ -279,8 +280,9 @@ path {
     <div class="line-wrapper">
       <a href="c2.html"
          target="_blank"
-         class="line-label">
-         2. Dipole radiation
+         class="line-label"
+         onclick="playSound(2)">
+         2. Interference
       </a>
 
       <svg class="wave-line orange" viewBox="0 0 900 60">
@@ -291,8 +293,9 @@ path {
     <div class="line-wrapper">
       <a href="c3.html"
          target="_blank"
-         class="line-label">
-         3. Propagation
+         class="line-label"
+         onclick="playSound(3)">
+         3. Snell's Law
       </a>
 
       <svg class="wave-line yellow" viewBox="0 0 900 60">
@@ -303,8 +306,9 @@ path {
     <div class="line-wrapper">
       <a href="c4.html"
          target="_blank"
-         class="line-label">
-         4. Reflection and Refraction
+         class="line-label"
+         onclick="playSound(4)">
+         4. Lens
       </a>
 
       <svg class="wave-line green" viewBox="0 0 900 60">
@@ -315,8 +319,9 @@ path {
     <div class="line-wrapper">
       <a href="c5.html"
          target="_blank"
-         class="line-label">
-         5. Diffraction
+         class="line-label"
+         onclick="playSound(5)">
+         5. Huygens · Fresnel
       </a>
 
       <svg class="wave-line cyan" viewBox="0 0 900 60">
@@ -327,8 +332,9 @@ path {
     <div class="line-wrapper">
       <a href="c6.html"
          target="_blank"
-         class="line-label">
-         6. Polarization
+         class="line-label"
+         onclick="playSound(6)">
+         6. Fourier Transform
       </a>
 
       <svg class="wave-line blue" viewBox="0 0 900 60">
@@ -339,7 +345,8 @@ path {
     <div class="line-wrapper">
       <a href="c7.html"
          target="_blank"
-         class="line-label">
+         class="line-label"
+         onclick="playSound(7)">
          7. Interference
       </a>
 
@@ -351,7 +358,8 @@ path {
     <div class="line-wrapper special">
       <a href="c8.html"
          target="_blank"
-         class="line-label">
+         class="line-label"
+         onclick="playSound(8)">
          8. Outro
       </a>
 
@@ -365,6 +373,11 @@ path {
 </main>
 
 <script>
+
+function playSound(num) {
+    const audio = new Audio(`sound/${num}.mp3`);
+    audio.play();
+}
 
 const CENTER_Y = 30;
 const AMPLITUDE = 5;

@@ -1,21 +1,657 @@
+<!-- Reference 
+ https://javalab.org/ko/optics/ -->
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Background</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>4. Lens</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Sans+KR:wght@300;400;500&family=Noto+Sans+Mono:wght@300;400&display=swap" rel="stylesheet">
 
 <style>
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  background: black;
-  overflow: hidden;
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background:#000;
+  color:rgba(255,255,255,0.82);
+  font-family:'Noto Sans KR',sans-serif;
+  font-weight:300;
+  font-size:13px;
+  overflow-x:hidden;
+  min-height:100vh;
+  user-select:none;
+}
+
+/* ── HEADER ── */
+header {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  padding:20px 28px 18px;
+  border-bottom:1px solid #151515;
+}
+.logo {
+  font-family:'Playfair Display',serif;
+  font-size:22px;
+  font-weight:400;
+  letter-spacing:6px;
+  color:#fff;
+}
+.header-hint {
+  font-size:11px;
+  letter-spacing:2px;
+  opacity:0.3;
+  font-weight:300;
+}
+
+/* ── LAYOUT ── */
+.layout {
+  display:flex;
+  height:calc(100vh - 61px);
+}
+
+/* ── CANVAS ── */
+.canvas-wrap {
+  flex:1;
+  position:relative;
+  background:#000;
+  overflow:hidden;
+}
+.sim-canvas {
+  display:block;
+  width:100%;
+  height:100%;
+  cursor:crosshair;
+}
+.sim-canvas.move-mode { cursor:grab; }
+.sim-canvas.move-mode:active { cursor:grabbing; }
+
+/* tab switcher overlay */
+.tab-overlay {
+  position:absolute;
+  top:14px; left:16px;
+  display:flex;
+  gap:0;
+  border:1px solid #1a1a1a;
+}
+.tab-btn {
+  background:transparent;
+  border:none;
+  border-right:1px solid #1a1a1a;
+  color:rgba(255,255,255,0.4);
+  font-family:'Noto Sans Mono',monospace;
+  font-size:10px;
+  letter-spacing:1.5px;
+  padding:6px 12px;
+  cursor:pointer;
+  transition:color 0.15s,background 0.15s;
+}
+.tab-btn:last-child{border-right:none;}
+.tab-btn:hover{color:rgba(255,255,255,0.8);}
+.tab-btn.active{color:#fff;background:rgba(255,255,255,0.07);}
+
+/* legend */
+#legend-box {
+  position:absolute;
+  bottom:16px; right:16px;
+  background:rgba(0,0,0,0.7);
+  border:1px solid #151515;
+  padding:12px 16px;
+  pointer-events:none;
+  backdrop-filter:blur(4px);
+}
+.leg-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:11px;
+  letter-spacing:1.5px;
+  line-height:2;
+  opacity:0.7;
+}
+.leg-dot { width:18px; height:1px; flex-shrink:0; }
+
+/* info overlay */
+#sim-info {
+  position:absolute;
+  bottom:16px; left:16px;
+  font-family:'Noto Sans Mono',monospace;
+  font-size:10px;
+  letter-spacing:1.5px;
+  color:rgba(255,255,255,0.3);
+  pointer-events:none;
+}
+
+/* ── PANEL ── */
+.panel {
+  width:240px;
+  background:#000;
+  border-left:1px solid #151515;
+  overflow-y:auto;
+  flex-shrink:0;
+  padding-bottom:32px;
+  scrollbar-width:thin;
+  scrollbar-color:#1a1a1a transparent;
+}
+.panel::-webkit-scrollbar{width:2px;}
+.panel::-webkit-scrollbar-thumb{background:#1a1a1a;}
+
+.sec-head {
+  padding:14px 18px 10px;
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.55);
+  border-top:1px solid #111;
+  margin-top:4px;
+}
+.sec-head:first-child{border-top:none;margin-top:0;}
+.sec-body{padding:4px 18px 12px;}
+
+/* tool grid */
+.tool-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  padding:4px 18px 12px;
+}
+.tool-btn {
+  background:transparent;
+  border:1px solid #222;
+  color:rgba(255,255,255,0.28);
+  font-family:'Noto Sans KR',sans-serif;
+  font-size:10px;
+  font-weight:300;
+  padding:8px 6px;
+  cursor:pointer;
+  text-align:center;
+  letter-spacing:0.5px;
+  transition:border-color 0.4s, color 0.4s;
+  line-height:1.3;
+}
+.tool-btn:hover{ border-color:#444; color:rgba(255,255,255,0.5); }
+.tool-btn.flash{
+  border-color:rgba(255,255,255,0.75);
+  color:#fff;
+  transition:none;   /* 즉시 흰색으로 */
+}
+
+/* move + clear row */
+.action-row {
+  display:flex;
+  gap:4px;
+  padding:0 18px 12px;
+}
+.action-btn {
+  flex:1;
+  background:transparent;
+  border:1px solid #333;
+  color:rgba(255,255,255,0.55);
+  font-family:'Noto Sans Mono',monospace;
+  font-size:10px;
+  padding:7px 4px;
+  cursor:pointer;
+  letter-spacing:1px;
+  transition:border-color 0.15s,color 0.15s;
+  text-align:center;
+}
+.action-btn:hover{border-color:rgba(255,255,255,0.5);color:#fff;}
+.action-btn.active{border-color:rgba(255,255,255,0.7);color:#fff;background:rgba(255,255,255,0.06);}
+.action-btn.danger{border-color:rgba(255,60,60,0.25);color:rgba(255,80,80,0.6);}
+.action-btn.danger:hover{border-color:rgba(255,80,80,0.7);color:rgba(255,100,100,1);}
+
+/* ctrl rows */
+.ctrl-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+  gap:8px;
+}
+.ctrl-label {
+  font-size:11px;
+  color:rgba(255,255,255,0.65);
+  letter-spacing:0.5px;
+  white-space:nowrap;
+}
+.ctrl-val {
+  font-family:'Noto Sans Mono',monospace;
+  font-size:11px;
+  color:rgba(255,255,255,0.85);
+  min-width:32px;
+  text-align:right;
+}
+
+input[type=range] {
+  -webkit-appearance:none;
+  width:100%;
+  height:1px;
+  background:#222;
+  outline:none;
+  cursor:pointer;
+  margin-bottom:10px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:10px;height:10px;
+  background:rgba(255,255,255,0.5);
+  border-radius:50%;
+  transition:background 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover{background:#fff;}
+
+.div-line{border:none;border-top:1px solid #0f0f0f;margin:8px 0;}
+
+@media(max-width:700px){
+  .panel{width:100%;border-left:none;border-top:1px solid #151515;}
+  .layout{flex-direction:column;height:auto;}
+  .canvas-wrap{height:60vw;min-height:260px;}
 }
 </style>
 </head>
-
 <body>
+
+<header>
+  <div class="logo">Lens</div>
+  <div class="header-hint">CLICK · DRAG · MOVE</div>
+</header>
+
+<div class="layout">
+
+  <!-- CANVAS AREA -->
+  <div class="canvas-wrap">
+    <canvas class="sim-canvas" id="mainCanvas" height="600"></canvas>
+
+
+
+    <!-- legend -->
+    <div id="legend-box">
+      <div class="leg-row"><div class="leg-dot" style="background:#ff4444"></div><span>광선</span></div>
+      <div class="leg-row"><div class="leg-dot" style="background:rgba(150,200,255,0.6)"></div><span>랜즈</span></div>
+    </div>
+
+    <div id="sim-info">도구를 선택하고 캔버스를 클릭하세요</div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+
+    <!-- TAB: REFRACTION -->
+    <div id="panel-refraction">
+      <div class="sec-head">도구 선택</div>
+      <div class="tool-grid">
+        <button class="tool-btn active" id="ref-t-laser"  onclick="refSetTool('laser',this)">레이저</button>
+        <button class="tool-btn"        id="ref-t-convex" onclick="refSetTool('convex',this)">볼록렌즈</button>
+        <button class="tool-btn"        id="ref-t-concave"onclick="refSetTool('concave',this)">오목렌즈</button>
+      </div>
+      <div class="action-row">
+        <button class="action-btn danger" onclick="refClear()">지우기</button>
+      </div>
+
+      <div class="sec-head">레이저 설정</div>
+      <div class="sec-body">
+        <div class="ctrl-row"><span class="ctrl-label">각도</span><span class="ctrl-val" id="ref-angle-val">0°</span></div>
+        <input type="range" min="-80" max="80" value="0" id="ref-angle" oninput="updateRefAngle()">
+      </div>
+
+      <div class="sec-head">굴절률</div>
+      <div class="sec-body">
+        <div class="ctrl-row"><span class="ctrl-label">n</span><span class="ctrl-val" id="ref-n-val">1.50</span></div>
+        <input type="range" min="100" max="250" value="150" id="ref-n" oninput="updateRefN()">
+      </div>
+
+      <!-- <div class="sec-head">범례</div>
+      <div class="sec-body" style="font-size:11px;color:rgba(255,255,255,0.4);line-height:2;letter-spacing:0.5px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="width:16px;height:1px;background:#ff4444;flex-shrink:0"></div>입사 광선
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:16px;height:1px;background:#4488ff;flex-shrink:0"></div>굴절 후 광선
+        </div>
+      </div> -->
+    </div>
+
+  </div><!-- end panel -->
+</div><!-- end layout -->
+
+<script>
+/* ════════════════════════════════════════════
+   GLOBALS
+════════════════════════════════════════════ */
+const DEG = Math.PI / 180;
+const canvas  = document.getElementById('mainCanvas');
+const ctx     = canvas.getContext('2d');
+let   canvasW = 0, canvasH = 0;
+
+/* ── resize ── */
+function initCanvas() {
+  const wrap = canvas.parentElement;
+  const dpr  = window.devicePixelRatio || 1;
+  canvasW = wrap.clientWidth;
+  canvasH = wrap.clientHeight;
+  canvas.width  = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => { initCanvas(); drawCurrent(); });
+
+function drawCurrent() {
+  ctx.clearRect(0,0,canvasW,canvasH);
+  drawGrid();
+  refDraw();
+}
+
+function drawGrid() {
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.03)';
+  ctx.lineWidth=1;
+  for(let x=0;x<canvasW;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvasH);ctx.stroke();}
+  for(let y=0;y<canvasH;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvasW,y);ctx.stroke();}
+  ctx.restore();
+}
+
+function updateInfo(msg) {
+  document.getElementById('sim-info').textContent = msg || '도구를 선택하고 캔버스를 클릭하세요';
+}
+
+/* ── pointer helpers ── */
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left) * (canvasW / rect.width),
+    y: (clientY - rect.top)  * (canvasH / rect.height)
+  };
+}
+
+/* ── drag state shared across all tabs ── */
+let dragItem   = null;
+let dragOff    = {x:0,y:0};
+let dragMoved  = false;   // distinguishes click from drag
+
+canvas.addEventListener('mousedown', onMouseDown);
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('mouseup',   onMouseUp);
+canvas.addEventListener('mouseleave',()=>{ dragItem=null; });
+canvas.addEventListener('click',     onCanvasClick);
+
+function onMouseDown(e) {
+  dragMoved = false;
+  const pos = getPos(e);
+  refStartDrag(pos);   // 항상 드래그 시도 — 도구 무관
+}
+
+function onMouseMove(e) {
+  if (!dragItem) return;
+  dragMoved = true;
+  const pos = getPos(e);
+  dragItem.x = pos.x - dragOff.x;
+  dragItem.y = pos.y - dragOff.y;
+  drawCurrent();
+}
+/* ── UNDO / REDO ── */
+const history = [];   // undo 스택 (최대 50개)
+const future  = [];   // redo 스택
+
+function saveSnapshot() {
+  const snap = {
+    lasers: refState.lasers.map(l=>({...l})),
+    lenses: refState.lenses.map(l=>({...l})),
+  };
+  history.push(snap);
+  if (history.length > 50) history.shift();
+  future.length = 0;   // 새 동작이 생기면 redo 스택 초기화
+}
+
+function undo() {
+  if (history.length === 0) { updateInfo('되돌릴 내용이 없습니다'); return; }
+  // 현재 상태를 redo 스택에 저장
+  future.push({
+    lasers: refState.lasers.map(l=>({...l})),
+    lenses: refState.lenses.map(l=>({...l})),
+  });
+  const snap = history.pop();
+  refState.lasers = snap.lasers;
+  refState.lenses = snap.lenses;
+  drawCurrent();
+  updateInfo(`↩ 되돌리기 (${history.length}단계 남음)`);
+}
+
+function redo() {
+  if (future.length === 0) { updateInfo('앞으로 돌아갈 내용이 없습니다'); return; }
+  // 현재 상태를 undo 스택에 저장
+  history.push({
+    lasers: refState.lasers.map(l=>({...l})),
+    lenses: refState.lenses.map(l=>({...l})),
+  });
+  const snap = future.pop();
+  refState.lasers = snap.lasers;
+  refState.lenses = snap.lenses;
+  drawCurrent();
+  updateInfo(`↪ 앞으로 (${future.length}단계 남음)`);
+}
+
+document.addEventListener('keydown', e => {
+  const z = e.key.toLowerCase() === 'z';
+  if ((e.ctrlKey || e.metaKey) && z && !e.shiftKey) {
+    e.preventDefault(); undo();
+  }
+  if ((e.ctrlKey || e.metaKey) && z && e.shiftKey) {
+    e.preventDefault(); redo();
+  }
+});
+
+function onMouseUp() {
+  if (dragItem && dragMoved) saveSnapshot();  // 드래그 이동 후 스냅샷
+  dragItem = null;
+}
+
+function onCanvasClick(e) {
+  // 드래그였으면 무시, 기존 물체 위 클릭도 무시(이동용)
+  if (dragMoved) return;
+  if (dragItem) return;
+  // 빈 공간 클릭 → 현재 도구로 배치
+  const pos = getPos(e);
+  refPlace(pos);
+}
+
+/* ════════════════════════════════════════════
+   1. REFRACTION / LENS
+════════════════════════════════════════════ */
+const refState = { tool:'laser', angle:0, n:1.5, lasers:[], lenses:[] };
+
+function refSetTool(t, btn) {
+  refState.tool = t;
+  // 버튼 flash: 즉시 흰색 → 400ms 후 .flash 제거 → transition으로 회색으로 복귀
+  if(btn) {
+    btn.classList.add('flash');
+    setTimeout(() => btn.classList.remove('flash'), 400);
+  }
+  // 중앙에 생성
+  const cx = canvasW / 2, cy = canvasH / 2;
+  saveSnapshot();
+  if(t==='laser')  refState.lasers.push({x:cx, y:cy, angle:refState.angle});
+  if(t==='convex') refState.lenses.push({x:cx, y:cy, type:'convex',  f: 90});
+  if(t==='concave')refState.lenses.push({x:cx, y:cy, type:'concave', f:-90});
+  drawCurrent();
+  updateInfoFromState();
+}
+
+function updateRefAngle() {
+  const v = parseInt(document.getElementById('ref-angle').value);
+  document.getElementById('ref-angle-val').textContent = v+'°';
+  refState.angle = v;
+  refState.lasers.forEach(l=>l.angle=v);
+  drawCurrent();
+}
+function updateRefN() {
+  const v = parseInt(document.getElementById('ref-n').value);
+  document.getElementById('ref-n-val').textContent = (v/100).toFixed(2);
+  refState.n = v/100;
+  drawCurrent();
+}
+function refClear() { saveSnapshot(); refState.lasers=[]; refState.lenses=[]; drawCurrent(); updateInfo(); }
+
+function updateInfoFromState() {
+  const parts=[];
+  if(refState.lasers.length) parts.push(`레이저 ${refState.lasers.length}개`);
+  const cv=refState.lenses.filter(l=>l.type==='convex').length;
+  const cc=refState.lenses.filter(l=>l.type==='concave').length;
+  if(cv) parts.push(`볼록렌즈 ${cv}개`);
+  if(cc) parts.push(`오목렌즈 ${cc}개`);
+  if(parts.length) parts.push(`n=${refState.n.toFixed(2)}`);
+  updateInfo(parts.join('  ·  '));
+}
+
+function refPlace(pos) {
+  saveSnapshot();
+  if(refState.tool==='laser')  refState.lasers.push({x:pos.x,y:pos.y,angle:refState.angle});
+  if(refState.tool==='convex') refState.lenses.push({x:pos.x,y:pos.y,type:'convex',f:90});
+  if(refState.tool==='concave')refState.lenses.push({x:pos.x,y:pos.y,type:'concave',f:-90});
+  drawCurrent();
+  updateInfoFromState();
+}
+
+function refStartDrag(pos) {
+  // 렌즈 우선 (히트박스: x ±30, y ±80)
+  for(let i=refState.lenses.length-1;i>=0;i--){
+    const l=refState.lenses[i];
+    if(Math.abs(pos.x-l.x)<30 && Math.abs(pos.y-l.y)<80){
+      dragItem=l; dragOff={x:pos.x-l.x,y:pos.y-l.y}; return;
+    }
+  }
+  // 레이저 (히트박스: 반지름 28)
+  for(let i=refState.lasers.length-1;i>=0;i--){
+    const l=refState.lasers[i];
+    if(Math.hypot(pos.x-l.x,pos.y-l.y)<28){
+      dragItem=l; dragOff={x:pos.x-l.x,y:pos.y-l.y}; return;
+    }
+  }
+}
+
+function refTrace(ox,oy,angleRad) {
+  const W=canvasW, H=canvasH;
+  // 매 경계면(공기→유리, 유리→공기)마다 96% 투과 → 렌즈 1개 = 경계면 2개 = ×0.9216
+  const TRANSMIT = 0.96;  // 경계면 1회 투과율
+  let x=ox, y=oy, dir=angleRad;
+  let intensity = 1.0;      // 현재 광선 세기 (0~1)
+  let surfaces  = 0;        // 통과한 경계면 수
+
+  // 렌즈 수 + 여유 2회 → 몇 개를 설치해도 광선이 끝까지 진행
+  const maxBounce = refState.lenses.length + 2;
+  for(let bounce=0; bounce < maxBounce; bounce++){
+    const dx=Math.cos(dir),dy=Math.sin(dir);
+    let nearT=Infinity,nearL=null;
+    for(const lens of refState.lenses){
+      if(Math.abs(dx)<1e-9) continue;
+      const t=(lens.x-x)/dx;
+      if(t<1) continue;
+      const iy=y+t*dy;
+      if(Math.abs(iy-lens.y)>70) continue;
+      if(t<nearT){nearT=t;nearL=lens;}
+    }
+    const tEdge=Math.min(
+      dx>0?(W-x)/dx:dx<0?(x>0?x/(-dx):Infinity):Infinity,
+      dy>0?(H-y)/dy:dy<0?(y>0?y/(-dy):Infinity):Infinity
+    );
+    // 세기에 따라 알파값 결정 — 최소 0.08로 클램프해서 완전히 사라지진 않게
+    const alpha = Math.max(0.08, intensity);
+    const color = `rgba(255,68,68,${alpha.toFixed(3)})`;
+    const glow  = `rgba(255,34,34,${(alpha*0.7).toFixed(3)})`;
+
+    if(!nearL||nearT>tEdge){
+      ctx.save();
+      ctx.strokeStyle=color; ctx.shadowColor=glow; ctx.shadowBlur=6; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+dx*tEdge,y+dy*tEdge); ctx.stroke();
+      ctx.restore(); return;
+    }
+    const ix=x+dx*nearT, iy=y+dy*nearT;
+    ctx.save();
+    ctx.strokeStyle=color; ctx.shadowColor=glow; ctx.shadowBlur=6; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ix,iy); ctx.stroke();
+    ctx.restore();
+
+    // 렌즈 통과: 경계면 2개(입사+출사) → 세기 ×0.96×0.96
+    intensity *= TRANSMIT * TRANSMIT;
+    surfaces  += 2;
+
+    const h=iy-nearL.y;
+    dir=Math.atan(Math.tan(dir)-h/nearL.f);
+    x=ix; y=iy;
+  }
+}
+
+function drawLensShape(ctx, type) {
+  const r = 70;   // half-height (aperture radius)
+  ctx.beginPath();
+  if (type === 'convex') {
+    // biconvex: both sides bulge outward
+    const bx = 18;  // bezier control offset (outward)
+    ctx.moveTo(0, -r);
+    ctx.bezierCurveTo( bx, -r*0.5,  bx,  r*0.5,  0,  r);   // right side curves right
+    ctx.bezierCurveTo(-bx,  r*0.5, -bx, -r*0.5,  0, -r);   // left side curves left
+  } else {
+    // biconcave: both sides cave inward — hourglass waist
+    const waist = 10;  // narrowest x-width at center
+    const bx = 5;      // control point pulled inward
+    // right edge: straight-ish line from top-right to bottom-right
+    // but waist is narrow, so top/bottom are at ±waist, center caves to bx
+    ctx.moveTo(waist, -r);
+    ctx.bezierCurveTo( bx, -r*0.4,  bx,  r*0.4,  waist,  r);  // right face caves left
+    ctx.lineTo(-waist,  r);
+    ctx.bezierCurveTo(-bx,  r*0.4, -bx, -r*0.4, -waist, -r);  // left face caves right
+    ctx.closePath();
+  }
+}
+
+function refDraw() {
+  // lenses
+  for(const lens of refState.lenses){
+    ctx.save(); ctx.translate(lens.x,lens.y);
+    drawLensShape(ctx, lens.type);
+    ctx.fillStyle='rgba(100,160,255,0.07)';
+    ctx.strokeStyle='rgba(180,210,255,0.6)';
+    ctx.lineWidth=1.5;
+    ctx.fill(); ctx.stroke();
+    // focal points
+    ctx.strokeStyle='rgba(255,255,255,0.15)';
+    ctx.lineWidth=1; ctx.setLineDash([2,5]);
+    [Math.abs(lens.f),-Math.abs(lens.f)].forEach(fx=>{
+      ctx.beginPath(); ctx.arc(fx,0,3,0,Math.PI*2); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(180,210,255,0.35)';
+    ctx.font='9px Noto Sans KR';
+    ctx.fillText(lens.type==='convex'?'볼록렌즈':'오목렌즈',-14,70+16);
+    ctx.restore();
+  }
+  // lasers
+  for(const laser of refState.lasers){
+    const aRad=laser.angle*DEG;
+    const BEAMS=3, SP=14;
+    for(let s=0;s<BEAMS;s++){
+      const off=(s-(BEAMS-1)/2)*SP;
+      const sx=laser.x-off*Math.sin(aRad);
+      const sy=laser.y+off*Math.cos(aRad);
+      refTrace(sx,sy,aRad);
+    }
+    // body
+    ctx.save(); ctx.translate(laser.x,laser.y); ctx.rotate(aRad);
+    ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(-28,-8,22,16,3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='7px monospace'; ctx.fillText('LASER',-24,3);
+    ctx.restore();
+  }
+}
+
+/* ── INIT ── */
+window.addEventListener('load',()=>{
+  initCanvas();
+  drawCurrent();
+});
+</script>
 </body>
 </html>
